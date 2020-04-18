@@ -1,0 +1,94 @@
+{
+"BlockingLevel": "operation",
+"Timeout": 60000,
+"CheckingInterval": 3000,
+"Cleanup": false,
+"Operations" : [
+  {
+	"Pods":
+	{
+       	"Actions": [
+                       {
+                               "Act": "CREATE",
+                               "Spec": {
+					"ImagePullPolicy": "IfNotPresent",
+				        "Image": "nginx",
+					"Namespace": "kbench-pod-namespace",
+					"PodNamePrefix": "myredis",
+					"LabelKey": "podtype",
+					"LabelValue": "redisworker",
+				        "YamlSpec": "./config/dp_redis/redis_pod.yaml"
+                              	}
+                       }
+                ],
+                "SleepTimes": [50000],
+                "Count": 1
+	}
+  },
+  {
+	"Pods":
+	{
+       	"Actions": [
+                       {
+                               "Act": "RUN",
+                               "Spec": {
+					"Namespace": "kbench-pod-namespace",
+					"LabelKey": "podtype",
+					"LabelValue": "redisworker",
+					"MatchGoroutine": true,
+					"Command": "mkdir /tmp/redisoutput; redis-server > /tmp/redisoutput/redisserver.out 2> /tmp/redisoutput/redisserver.err &"
+                              	}
+                       }
+                ],
+                "SleepTimes": [5000],
+                "Count": 1
+	}
+  },
+  {
+	"Pods":
+	{
+       	"Actions": [
+                       {
+                               "Act": "RUN",
+                               "Spec": {
+					"Namespace": "kbench-pod-namespace",
+					"LabelKey": "podtype",
+					"LabelValue": "redisworker",
+					"MatchGoroutine": true,
+					"Command": "cd /memtier_benchmark; ./memtier_benchmark > /tmp/redisoutput/memtier.out 2> /tmp/redisoutput/memtier.err;"
+                              	}
+                       }
+                ],
+                "SleepTimes": [5000],
+                "Count": 1
+	}
+  },
+  {
+        "Pods":
+        {
+        	"Actions": [
+                        {
+                                "Act": "COPY",
+                                "Spec": {
+        	                        "Namespace": "kbench-pod-namespace",
+                                	"LocalPath": "./",
+                                	"ContainerPath": "/tmp/redisoutput",
+                                	"Upload": false,
+                                        "MatchOperation": "ALL",
+                                        "MatchGoroutine": false
+                               	}
+                        }
+                 ],
+                 "SleepTimes": [20000],
+                 "Count": 1
+        }
+  }
+],
+"Tags" : [
+	{
+		"Key": "testProfile",
+		"Value": "redis"
+	}
+],
+"WavefrontPathDir": "/home/vmware"
+}

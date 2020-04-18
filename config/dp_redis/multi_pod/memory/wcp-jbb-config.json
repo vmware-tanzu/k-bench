@@ -1,0 +1,184 @@
+{
+        "VsphereInfra": {
+        	"VcUser": "Administrator@vsphere.local",
+        	"VcPassword": "Admin!23",
+        	"VcIp": "10.196.119.76",
+        	"Cluster": "wcp-cluster",
+        	"Size": "LARGE",
+        	"MasterDNS": ["192.168.0.100"],
+        	"WorkerDNS": ["192.168.0.100"],
+        	"MasterNTP": ["ntp1-evn1.eng.vmware.com"],
+        	"WorkerNTP": ["ntp1-evn1.eng.vmware.com"],
+        	"MasterNetwork": {
+        		"Mode": "STATICRANGE",
+        		"VcNetwork": "VM Network",
+        		"Gateway": "192.168.0.1",
+        		"Start": "192.168.197.1",
+        		"Count": 1,
+        		"NetworkMask": "255.255.0.0"
+        	},
+        	"ManagementNetwork": {
+        		"Mode": "STATICRANGE",
+        		"VcNetwork": "VM Network",
+        		"Gateway": "192.168.0.1",
+        		"Start": "192.168.196.1",
+        		"Count": 1,
+        		"NetworkMask": "255.255.0.0"
+        	},
+        	"WorkerNetwork": {
+        		"Mode": "STATICRANGE",
+        		"VcNetwork": "VM Network",
+        		"Gateway": "192.168.0.1",
+        		"Start": "192.168.198.1",
+        		"Count": 32,
+        		"NetworkMask": "255.255.0.0"
+        	},
+        	"MasterStore": "sh-ds-0",
+        	"WorkerStore": "sh-ds-0",
+        	"PodCidr": {
+        		"Address": "192.168.128.0",
+        		"Prefix": 18
+        	},
+        	"ServiceCidr": {
+        		"Address": "192.168.192.0",
+        		"Prefix": 24
+        	}
+        },
+        "BlockingLevel": "operation",
+        "Timeout": 60000,
+        "CheckingInterval": 3000,
+        "Cleanup": false,
+        "Operations" : [
+          {
+        	"Pods":
+        	{
+        		"Actions": [
+                                {
+                                        "Act": "CREATE",
+                                        "Spec": {
+                                                "MatchGoroutine": true,
+        		                        "ImagePullPolicy": "IfNotPresent",
+        	                                "Image": "nginx",
+        		                        "Namespace": "test-simple6",
+        		                        "PodNamePrefix": "myjbb",
+        	                                "Count": 1,
+        	                                "YamlSpec": "./config/specjbb2015/jbb_pod.yaml"
+                                         }
+                                },
+                                {
+                                        "Act": "COPY",
+                                        "Spec": {
+                                                "MatchGoroutine": true,
+        		                        "Namespace": "test-simple6",
+        	                        	"LocalPath": "./waverunner/golden/JBB_L",
+        	                        	"ContainerPath": "/root/",
+        	                        	"Upload": true
+                                        }
+                                },
+                                {
+                                        "Act": "COPY",
+                                        "Spec": {
+                                                "MatchGoroutine": true,
+        		                        "Namespace": "test-simple6",
+        	                        	"LocalPath": "./config/specjbb2015/config_JBB_PRESET.wcfg",
+        	                        	"ContainerPath": "/root/JBB_L/",
+        	                        	"Upload": true
+                                        }
+                                },
+                                {
+                                        "Act": "RUN",
+                                        "Spec": {
+                                                "MatchGoroutine": true,
+        		                        "Namespace": "test-simple6",
+        	                        	"Command": "/root/JBB_L/configure.sh -c /root/JBB_L/config_JBB_PRESET.wcfg; mkdir /root/JBB_L/results; /root/JBB_L/run.sh >> /root/JBB_L/results/myrun.out 2>&1 &"
+                                        }
+                                }
+                         ],
+        	        "SleepTimes": [300000, 15000, 5000, 600000],
+                        "Count": 9
+        	},
+                "RepeatTimes": 0
+          },
+          {
+        	"Pods":
+        	{
+        		"Actions": [
+                                {
+                                        "Act": "CREATE",
+                                        "Spec": {
+                                                "MatchGoroutine": true,
+                                                "MatchOperation": "CURRENT",
+        		                        "ImagePullPolicy": "IfNotPresent",
+        	                                "Image": "nginx",
+        		                        "Namespace": "test-simple6",
+        		                        "PodNamePrefix": "myjbb",
+        	                                "Count": 1,
+        	                                "YamlSpec": "./config/specjbb2015/jbb_pod.yaml"
+                                         }
+                                },
+                                {
+                                        "Act": "COPY",
+                                        "Spec": {
+                                                "MatchGoroutine": true,
+                                                "MatchOperation": "CURRENT",
+        		                        "Namespace": "test-simple6",
+        	                        	"LocalPath": "./waverunner/golden/JBB_L",
+        	                        	"ContainerPath": "/root/",
+        	                        	"Upload": true
+                                        }
+                                },
+                                {
+                                        "Act": "COPY",
+                                        "Spec": {
+                                                "MatchGoroutine": true,
+                                                "MatchOperation": "CURRENT",
+        		                        "Namespace": "test-simple6",
+        	                        	"LocalPath": "./config/specjbb2015/config_JBB.wcfg",
+        	                        	"ContainerPath": "/root/JBB_L/",
+        	                        	"Upload": true
+                                        }
+                                },
+                                {
+                                        "Act": "RUN",
+                                        "Spec": {
+                                                "MatchGoroutine": true,
+                                                "MatchOperation": "CURRENT",
+        		                        "Namespace": "test-simple6",
+        	                        	"Command": "/root/JBB_L/configure.sh -c /root/JBB_L/config_JBB.wcfg; mkdir /root/JBB_L/results; /root/JBB_L/run.sh >> /root/JBB_L/results/myrun.out 2>&1 &"
+                                        }
+                                }
+                         ],
+        	        "SleepTimes": [300000, 15000, 5000, 8000000],
+                        "Count": 1
+        	},
+                "RepeatTimes": 0
+          },
+          {
+        	"Pods":
+        	{
+        		"Actions": [
+                                {
+                                        "Act": "COPY",
+                                        "Spec": {
+        		                        "Namespace": "test-simple6",
+        	                        	"LocalPath": "./",
+        	                        	"ContainerPath": "/root/JBB_L/results",
+        	                        	"Upload": false,
+                                                "MatchOperation": "ALL",
+                                                "MatchGoroutine": false
+        	                       	}
+                                }
+                         ],
+        	         "SleepTimes": [100000],
+                         "Count": 1
+        	}
+          }
+        ],
+        "Tags" : [
+        	{
+        		"Key": "JBBworkload",
+        		"Value": "singlePod"
+        	}
+        ],
+        "WavefrontPathDir": "/home/vmware"
+}

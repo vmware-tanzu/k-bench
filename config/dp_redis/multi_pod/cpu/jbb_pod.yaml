@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myjbbpod
+  namespace: test-simple6
+  labels:
+    name: myjbb
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values:
+            - kube-dp-node4
+            - w1-hs1-a1814.eng.vmware.com
+            - dp-photon-node 
+  containers:
+  - image: docker.io/ganesank/jbb:v1 
+    resources:
+      limits:
+        memory: "42000Mi"
+        cpu: "8000m"
+      requests:
+        memory: "42000Mi"
+        cpu: "2000m"
+    command: ["/bin/sh","-c"]
+    args: 
+      - sleep infinity;
+    name: jbbcontainer

@@ -1,0 +1,50 @@
+{
+	"BlockingLevel": "operation",
+	"Timeout": 540000,
+	"CheckingInterval": 3000,
+	"Cleanup": true,
+	"Operations": [
+		{
+                        "Predicate": {
+                                "Resource": "kube-system/pod/etcd-k8s-master/etcd",
+                                "Command": "ls",
+                                "Expect": "contains:etc"
+                        },
+			"Deployments": {
+				"Actions": [
+					{
+						"Act": "CREATE",
+						"Spec": {
+							"ImagePullPolicy": "IfNotPresent",
+							"Image": "k8s.gcr.io/pause:3.1",
+							"NumReplicas": 2,
+                                                        "Namespace": "test-simple"
+						}
+					},
+                                        {
+                                                "Act": "DELETE",
+                                                "Spec": {
+                                                        "Namespace": "test-simple"
+                                                }
+                                        }
+				],
+				"SleepTimes": [
+					10000,
+					3000,
+					3000,
+					3000,
+					9000,
+					3000
+				],
+				"Count": 2
+			},
+                        "RepeatTimes": 0
+		}
+	],
+	"Tags": [
+		{
+			"Key": "testProfile",
+			"Value": "light-1"
+		}
+	]
+}

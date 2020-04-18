@@ -1,0 +1,189 @@
+{
+"BlockingLevel": "operation",
+"Timeout": 60000,
+"CheckingInterval": 3000,
+"Cleanup": false,
+"Operations" : [
+  {
+	"Pods":
+	{
+       	"Actions": [
+                       {
+                               "Act": "CREATE",
+                               "Spec": {
+					"ImagePullPolicy": "IfNotPresent",
+				        "Image": "nginx",
+					"Namespace": "kbench-pod-namespace",
+					"PodNamePrefix": "myfio",
+					"LabelKey": "podtype",
+					"LabelValue": "fioworker",
+				        "YamlSpec": "./config/dp_fio/fio_pod.yaml"
+                              	}
+                       }
+                ],
+                "SleepTimes": [50000],
+                "Count": 1
+	}
+  },
+  {
+	"Pods":
+	{
+       	"Actions": [
+                       {
+                               "Act": "RUN",
+                               "Spec": {
+					"Namespace": "kbench-pod-namespace",
+					"LabelKey": "podtype",
+					"LabelValue": "fioworker",
+					"MatchGoroutine": true,
+					"Command": "mkdir /tmp/fiooutput; fio --name=random --ioengine=sync --iodepth=16 --rw=randrw --rwmixread=70 --bs=4k --direct=1 --size=1g --numjobs=4 --group_reporting=1 --eta=always --eta-newline=10s --ramp_time=10 --time_based --runtime=60 --gtod_reduce=1 --directory=/mnt/fio-volume > /tmp/fiooutput/fio_sync_randR70W30.out 2> /tmp/fiooutput/fio_sync_randR70W30.err; fio --name=random --ioengine=sync --iodepth=16 --rw=randrw --rwmixread=70 --bs=4k --direct=1 --size=1g --numjobs=4 --group_reporting=1 --eta=always --eta-newline=10s --ramp_time=10 --time_based --runtime=60 --gtod_reduce=1 --directory=/ > /tmp/fiooutput/fio_root_sync_randR70W30.out 2> /tmp/fiooutput/fio_root_sync_randR70W30.err;"
+                              	}
+                       }
+                ],
+                "SleepTimes": [5000],
+                "Count": 1
+	}
+  },
+  {
+	"Pods":
+	{
+       	"Actions": [
+                       {
+                               "Act": "RUN",
+                               "Spec": {
+					"Namespace": "kbench-pod-namespace",
+					"LabelKey": "podtype",
+					"LabelValue": "fioworker",
+					"MatchGoroutine": true,
+					"Command": "mkdir /tmp/fiooutput; fio --name=random --ioengine=libaio --iodepth=16 --rw=randrw --rwmixread=70 --bs=4k --direct=1 --size=1g --numjobs=4 --group_reporting=1 --eta=always --eta-newline=10s --ramp_time=10 --time_based --runtime=60 --gtod_reduce=1 --directory=/mnt/fio-volume > /tmp/fiooutput/fio_async_randR70W30.out 2> /tmp/fiooutput/fio_async_randR70W30.err; fio --name=random --ioengine=libaio --iodepth=16 --rw=randrw --rwmixread=70 --bs=4k --direct=1 --size=1g --numjobs=4 --group_reporting=1 --eta=always --eta-newline=10s --ramp_time=10 --time_based --runtime=60 --gtod_reduce=1 --directory=/ > /tmp/fiooutput/fio_root_async_randR70W30.out 2> /tmp/fiooutput/fio_root_async_randR70W30.err;"
+                              	}
+                       }
+                ],
+                "SleepTimes": [5000],
+                "Count": 1
+	}
+  },
+  {
+	"Pods":
+	{
+       	"Actions": [
+                       {
+                               "Act": "RUN",
+                               "Spec": {
+					"Namespace": "kbench-pod-namespace",
+					"LabelKey": "podtype",
+					"LabelValue": "fioworker",
+					"MatchGoroutine": true,
+					"Command": "mkdir /tmp/fiooutput; fio --name=random --ioengine=sync --iodepth=16 --rw=randrw --rwmixread=100 --bs=4k --direct=1 --size=1g --numjobs=4 --group_reporting=1 --eta=always --eta-newline=10s --ramp_time=10 --time_based --runtime=60 --gtod_reduce=1 --directory=/mnt/fio-volume > /tmp/fiooutput/fio_sync_randR100W0.out 2> /tmp/fiooutput/fio_sync_randR100W0.err; fio --name=random --ioengine=sync --iodepth=16 --rw=randrw --rwmixread=100 --bs=4k --direct=1 --size=1g --numjobs=4 --group_reporting=1 --eta=always --eta-newline=10s --ramp_time=10 --time_based --runtime=60 --gtod_reduce=1 --directory=/ > /tmp/fiooutput/fio_root_sync_randR100W0.out 2> /tmp/fiooutput/fio_root_sync_randR100W0.err;"
+                              	}
+                       }
+                ],
+                "SleepTimes": [5000],
+                "Count": 1
+	}
+  },
+  {
+	"Pods":
+	{
+       	"Actions": [
+                       {
+                               "Act": "RUN",
+                               "Spec": {
+					"Namespace": "kbench-pod-namespace",
+					"LabelKey": "podtype",
+					"LabelValue": "fioworker",
+					"MatchGoroutine": true,
+					"Command": "mkdir /tmp/fiooutput; fio --name=random --ioengine=libaio --iodepth=16 --rw=randrw --rwmixread=0 --bs=4k --direct=1 --size=1g --numjobs=4 --group_reporting=1 --eta=always --eta-newline=10s --ramp_time=10 --time_based --runtime=60 --gtod_reduce=1 --directory=/mnt/fio-volume > /tmp/fiooutput/fio_async_randR0W100.out 2> /tmp/fiooutput/fio_async_randR0W100.err; fio --name=random --ioengine=libaio --iodepth=16 --rw=randrw --rwmixread=0 --bs=4k --direct=1 --size=1g --numjobs=4 --group_reporting=1 --eta=always --eta-newline=10s --ramp_time=10 --time_based --runtime=60 --gtod_reduce=1 --directory=/ > /tmp/fiooutput/fio_root_async_randR0W100.out 2> /tmp/fiooutput/fio_root_async_randR0W100.err;"
+                              	}
+                       }
+                ],
+                "SleepTimes": [5000],
+                "Count": 1
+	}
+  },
+  {
+	"Pods":
+	{
+       	"Actions": [
+                       {
+                               "Act": "RUN",
+                               "Spec": {
+					"Namespace": "kbench-pod-namespace",
+					"LabelKey": "podtype",
+					"LabelValue": "fioworker",
+					"MatchGoroutine": true,
+					"Command": "mkdir /tmp/fiooutput; fio --name=random --ioengine=libaio --iodepth=16 --rw=randrw --rwmixread=100 --bs=4k --direct=1 --size=1g --numjobs=4 --group_reporting=1 --eta=always --eta-newline=10s --ramp_time=10 --time_based --runtime=60 --gtod_reduce=1 --directory=/mnt/fio-volume > /tmp/fiooutput/fio_async_randR100W0.out 2> /tmp/fiooutput/fio_async_randR100W0.err; fio --name=random --ioengine=sync --iodepth=16 --rw=randrw --rwmixread=100 --bs=4k --direct=1 --size=1g --numjobs=4 --group_reporting=1 --eta=always --eta-newline=10s --ramp_time=10 --time_based --runtime=60 --gtod_reduce=1 --directory=/ > /tmp/fiooutput/fio_root_async_randR100W0.out 2> /tmp/fiooutput/fio_root_async_randR100W0.err;"
+                              	}
+                       }
+                ],
+                "SleepTimes": [5000],
+                "Count": 1
+	}
+  },
+  {
+	"Pods":
+	{
+       	"Actions": [
+                       {
+                               "Act": "RUN",
+                               "Spec": {
+					"Namespace": "kbench-pod-namespace",
+					"LabelKey": "podtype",
+					"LabelValue": "fioworker",
+					"MatchGoroutine": true,
+					"Command": "mkdir /tmp/fiooutput; fio --name=random --ioengine=sync --iodepth=16 --rw=randrw --rwmixread=0 --bs=4k --direct=1 --size=1g --numjobs=4 --group_reporting=1 --eta=always --eta-newline=10s --ramp_time=10 --time_based --runtime=60 --gtod_reduce=1 --directory=/mnt/fio-volume > /tmp/fiooutput/fio_sync_randR0W100.out 2> /tmp/fiooutput/fio_sync_randR0W100.err; fio --name=random --ioengine=libaio --iodepth=16 --rw=randrw --rwmixread=0 --bs=4k --direct=1 --size=1g --numjobs=4 --group_reporting=1 --eta=always --eta-newline=10s --ramp_time=10 --time_based --runtime=60 --gtod_reduce=1 --directory=/ > /tmp/fiooutput/fio_root_sync_randR0W100.out 2> /tmp/fiooutput/fio_root_sync_randR0W100.err;"
+                              	}
+                       }
+                ],
+                "SleepTimes": [5000],
+                "Count": 1
+	}
+  },
+  {
+	"Pods":
+	{
+       	"Actions": [
+                       {
+                               "Act": "RUN",
+                               "Spec": {
+					"Namespace": "kbench-pod-namespace",
+					"LabelKey": "podtype",
+					"LabelValue": "fioworker",
+					"MatchGoroutine": true,
+					"Command": "ioping -c 100 /mnt/fio-volume > tmp/fiooutput/ioping.out 2> /tmp/fiooutput/ioping.err; ioping -c 100 / > tmp/fiooutput/ioping_root.out 2> /tmp/fiooutput/ioping_root.err;"
+                              	}
+                       }
+                ],
+                "SleepTimes": [5000],
+                "Count": 1
+	}
+  },
+  {
+        "Pods":
+        {
+        	"Actions": [
+                        {
+                                "Act": "COPY",
+                                "Spec": {
+        	                        "Namespace": "kbench-pod-namespace",
+                                	"LocalPath": "./",
+                                	"ContainerPath": "/tmp/fiooutput",
+                                	"Upload": false,
+                                        "MatchOperation": "ALL",
+                                        "MatchGoroutine": false
+                               	}
+                        }
+                 ],
+                 "SleepTimes": [20000],
+                 "Count": 1
+        }
+  }
+],
+"Tags" : [
+	{
+		"Key": "testProfile",
+		"Value": "fio"
+	}
+],
+"WavefrontPathDir": "/home/vmware"
+}

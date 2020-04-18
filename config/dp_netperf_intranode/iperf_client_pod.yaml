@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myiperfclientpod
+  namespace: kbench-pod-namespace
+  labels:
+    name: myiperf
+    podtype: client
+spec:
+  affinity:
+    podAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: podtype 
+            operator: In
+            values:
+            - server
+        topologyKey: kubernetes.io/hostname
+  hostname: iperfclient
+  subdomain: kbench-service-oid-0-tid-0
+  containers:
+  - image: nginx 
+    resources:
+      limits:
+        memory: "4200Mi"
+        cpu: "8000m"
+      requests:
+        memory: "4200Mi"
+        cpu: "1000m"
+        ephemeral-storage: "5Gi"
+    command: ["/bin/sh","-c"]
+    args: 
+      - sleep 2s;
+        apt-get update;
+        apt-get install -y iperf3;
+        apt-get install -y procps;
+        apt-get install -y net-tools;
+        apt-get install -y iputils-ping;
+        apt-get install -y qperf;
+        apt-get clean;
+        apt-get install -y wget gawk make;
+        apt-get clean;
+        apt-get install -y gcc libpath-tiny-perl;
+        cd /tmp; 
+        wget https://www.openfabrics.org/downloads/qperf/qperf-0.4.9.tar.gz; 
+        tar xvf qperf-0.4.9.tar.gz; 
+        cd qperf-0.4.9; 
+        ./configure; 
+        make; 
+        sleep infinity;
+    name: iperfclientcontainer

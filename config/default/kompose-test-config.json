@@ -1,0 +1,115 @@
+{
+	"BlockingLevel": "operation",
+	"Timeout": 540000,
+	"CheckingInterval": 3000,
+	"Cleanup": true,
+	"DockerCompose":"./config/docker-compose1.yml",
+	"Operations": [
+		{
+			"Pods": {
+				"Actions": [
+					{
+						"Act": "CREATE",
+						"Spec": {
+							"ImagePullPolicy": "IfNotPresent",
+							"Image": "k8s.gcr.io/pause:3.1"
+						}
+					},
+					{
+						"Act": "LIST"
+					},
+					{
+						"Act": "GET"
+					},
+					{
+						"Act": "UPDATE"
+					},
+					{
+						"Act": "DELETE"
+					}
+				],
+				"SleepTimes": [
+					5000,
+					300,
+					300,
+					300,
+					900,
+					300
+				],
+				"Count": 1
+			}
+		},
+		{
+			"Deployments": {
+				"Actions": [
+					{
+						"Act": "CREATE",
+						"Spec": {
+							"ImagePullPolicy": "IfNotPresent",
+							"Image": "k8s.gcr.io/pause:3.1",
+							"NumReplicas": 2
+						}
+					},
+					{
+						"Act": "LIST"
+					},
+					{
+						"Act": "GET"
+					},
+					{
+						"Act": "UPDATE"
+					},
+					{
+						"Act": "DELETE"
+					}
+				],
+				"SleepTimes": [
+					10000,
+					1000,
+					1000,
+					1000,
+					1000,
+					1000
+				],
+				"Count": 1
+			}
+		},
+		{
+			"Namespaces": {
+				"Actions": [
+					{
+						"Act": "CREATE"
+					},
+					{
+						"Act": "LIST"
+					},
+					{
+						"Act": "GET"
+					},
+					{
+						"Act": "UPDATE"
+					},
+					{
+						"Act": "DELETE"
+					}
+				],
+				"SleepTimes": [
+					10000,
+					3000,
+					3000,
+					3000,
+					3000
+				],
+				"Count": 1
+			}
+		}
+	],
+	"Tags": [
+		{
+			"Key": "testProfile",
+			"Value": "light-1"
+		}
+	],
+	"WavefrontPathDir": "/home/vmware",
+	"SleepTimeAfterRun": 10000
+}

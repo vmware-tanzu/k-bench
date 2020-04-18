@@ -1,0 +1,149 @@
+{
+	"BlockingLevel": "operation",
+	"Timeout": 540000,
+	"CheckingInterval": 3000,
+	"Cleanup": false,
+	"Operations": [
+		{
+			"Pods": {
+				"Actions": [
+					{
+						"Act": "CREATE",
+						"Spec": {
+							"ImagePullPolicy": "IfNotPresent",
+							"Image": "k8s.gcr.io/pause:3.1"
+						}
+					},
+					{
+						"Act": "LIST"
+					},
+					{
+						"Act": "GET"
+					},
+					{
+						"Act": "UPDATE"
+					}
+				],
+				"SleepTimes": [
+					10000,
+					3000,
+					3000,
+					3000
+				],
+				"Count": 16
+			}
+		},
+		{
+			"Pods": {
+				"Actions": [
+					{
+						"Act": "DELETE",
+						"Spec": {
+							"MatchGoroutine": true
+						}
+					}
+				],
+				"SleepTimes": [
+					1000
+				],
+				"Count": 1
+			}
+		},
+		{
+			"Pods": {
+				"Actions": [
+					{
+						"Act": "CREATE",
+						"Spec": {
+							"ImagePullPolicy": "IfNotPresent",
+							"Image": "k8s.gcr.io/pause:3.1"
+						}
+					},
+					{
+						"Act": "LIST",
+						"Spec": {
+							"MatchOperation": "ALL",
+							"MatchGoroutine": true
+						}
+					},
+					{
+						"Act": "LIST",
+						"Spec": {
+							"MatchOperation": "ALL",
+							"MatchGoroutine": false
+						}
+					},
+					{
+						"Act": "LIST",
+						"Spec": {
+							"MatchOperation": "CURRENT",
+							"MatchGoroutine": true
+						}
+					},
+					{
+						"Act": "LIST",
+						"Spec": {
+							"MatchOperation": "CURRENT",
+							"MatchGoroutine": false
+						}
+					}
+				],
+				"SleepTimes": [
+					10000
+				],
+				"Count": 2
+			}
+		},
+		{
+			"Pods": {
+				"Actions": [
+					{
+						"Act": "CREATE",
+						"Spec": {
+							"ImagePullPolicy": "IfNotPresent",
+							"Image": "k8s.gcr.io/pause:3.1"
+						}
+					},
+					{
+						"Act": "LIST",
+						"Spec": {
+							"MatchOperation": "ALL",
+							"MatchGoroutine": true
+						}
+					},
+					{
+						"Act": "LIST",
+						"Spec": {
+							"MatchOperation": "ALL",
+							"MatchGoroutine": false
+						}
+					},
+					{
+						"Act": "LIST",
+						"Spec": {
+							"MatchOperation": "CURRENT",
+							"MatchGoroutine": true
+						}
+					},
+					{
+						"Act": "LIST",
+						"Spec": {
+							"MatchOperation": "CURRENT",
+							"MatchGoroutine": false
+						}
+					}
+				],
+				"SleepTimes": [
+					10000
+				],
+				"Count": 2
+			}
+		}
+	],
+	"Tags": [
+		{
+			"Key": "testProfile",
+			"Value": "example-config"
+		}
+	]
+}

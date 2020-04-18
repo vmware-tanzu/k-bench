@@ -1,0 +1,8 @@
+-c e:fixed_instr_retired
+-c e:fixed_unhalted_core_cycles
+-c e:fixed_unhalted_ref_cycles
+-c e:unhalted_core_cycles
+-c e:resource_stalls
+-c e:uops_retired
+-c e:REHABQ.LD_BLOCK_ST_FORWARD
+-c e:REHABQ.LD_SPLITS

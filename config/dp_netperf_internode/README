@@ -1,0 +1,2 @@
+Run netperf individually using the following command:
+cd ../../; ./run.sh -t "dp_netperf" -r <run-tag> -o <output-dir>"
