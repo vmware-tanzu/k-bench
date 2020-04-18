@@ -1,0 +1,8 @@
+-c e:fixed_instr_retired,d:k
+-c e:fixed_unhalted_core_cycles
+-c e:BR_INST_RETIRED.CONDITIONAL 
+-c e:BR_MISS_RETIRED.ALL_BRANCHES
+-c e:BR_MISS_RETIRED.CONDITIONAL
+-c e:RESOURCE_STALLS.ANY
+-c e:MEM_LOAD_UOPS_RETIRED.L1_HIT
+-c e:MEM_LOAD_UOPS_RETIRED.L1_MISS

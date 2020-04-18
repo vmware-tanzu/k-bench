@@ -1,0 +1,46 @@
+{
+"BlockingLevel": "operation",
+"Timeout": 60000,
+"CheckingInterval": 3000,
+"Cleanup": true,
+"Operations" : [
+  {
+	"ReplicationControllers":
+	{
+		"Actions": ["CREATE", "LIST", "GET", "UPDATE", "SCALE"],
+		"SleepTimes": [30000, 3000, 3000, 3000, 5000, 5000],
+		"ImagePullPolicy": "IfNotPresent",
+        "Count": 4,
+        "YamlSpec": "./config/replication_controller.yaml"
+	},
+	"RepeatTimes": 0
+  },
+  {
+     "ReplicationControllers":
+	{
+		"Actions": ["LIST"],
+		"SleepTimes": [3000],
+		"Namespace": "test-simple",
+		"Count": 4,
+		"MatchGoroutine": false
+	}
+  },
+  {
+     "ReplicationControllers":
+	{
+		"Actions": ["LIST"],
+		"SleepTimes": [3000],
+		"Namespace": "test-simple",
+		"Count": 4,
+		"MatchGoroutine": true
+	}
+  }
+],
+"Tags" : [
+	{
+		"Key": "testProfile",
+		"Value": "heavy"
+	}
+],
+"SleepTimeAfterRun": 1000
+}

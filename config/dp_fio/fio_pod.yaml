@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myfiopod
+  namespace: kbench-pod-namespace 
+  labels:
+    name: myfio
+spec:
+  volumes:
+  - name: fio-volume 
+    persistentVolumeClaim:
+      claimName: fio-block-pvc
+  containers:
+  - image: nginx
+    resources:
+      limits:
+        memory: "4200Mi"
+        cpu: "8000m"
+      requests:
+        memory: "4200Mi"
+        cpu: "1000m"
+        ephemeral-storage: "10Gi"
+    volumeMounts:
+    - name: fio-volume 
+      mountPath: /mnt/fio-volume
+    command: ["/bin/sh","-c"]
+    args: 
+      - apt-get update;
+        apt-get install -y fio ioping;
+        sleep infinity;
+    name: fiocontainer

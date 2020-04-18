@@ -1,0 +1,2 @@
+Run fio individually using the following command:
+cd ../../; ./run.sh -t "dp_fio" -r <run-tag> -o <output-dir>"

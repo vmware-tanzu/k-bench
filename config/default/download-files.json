@@ -1,0 +1,37 @@
+{
+	"BlockingLevel": "operation",
+	"Timeout": 60000,
+	"CheckingInterval": 3000,
+	"Cleanup": true,
+	"Operations": [
+		{
+			"Pods": {
+				"Actions": [
+					{
+						"Act": "COPY",
+						"Spec": {
+							"LabelKey": "env",
+							"LabelValue": "test",
+							"Namespace": "test-simple",
+							"LocalPath": "./test-data-download/",
+							"ContainerPath": "/tmp/",
+							"Upload": false
+						}
+					}
+				],
+				"SleepTimes": [
+					2000
+				],
+				"Count": 1
+			}
+		}
+	],
+	"Tags": [
+		{
+			"Key": "testProfile",
+			"Value": "test-download"
+		}
+	],
+	"WavefrontPathDir": "/home/vmware",
+	"SleepTimeAfterRun": 10000
+}

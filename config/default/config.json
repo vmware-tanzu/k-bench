@@ -1,0 +1,127 @@
+{
+	"BlockingLevel": "operation",
+	"Timeout": 60000,
+	"CheckingInterval": 3000,
+	"Cleanup": true,
+	"Operations": [
+		{
+			"Deployments": {
+				"Actions": [
+					{
+						"Act": "CREATE",
+						"Spec": {
+							"ImagePullPolicy": "IfNotPresent",
+							"Image": "k8s.gcr.io/pause:3.1",
+							"YamlSpec": "./config/default/deployment.yaml",
+							"NumReplicas": 3
+						}
+					},
+					{
+						"Act": "LIST",
+						"Spec": {
+							"Namespace": "default"
+						}
+					},
+					{
+						"Act": "UPDATE",
+						"Spec": {
+							"Namespace": "default"
+						}
+					},
+					{
+						"Act": "SCALE",
+						"Spec": {
+							"Namespace": "default"
+						}
+					},
+					{
+						"Act": "DELETE",
+						"Spec": {
+							"Namespace": "default"
+						}
+					}
+				],
+				"SleepTimes": [
+					20000,
+					300,
+					300,
+					300,
+					10000,
+					3000
+				],
+				"Count": 6
+			},
+			"Pods": {
+				"Actions": [
+					{
+						"Act": "CREATE",
+						"Spec": {
+							"ImagePullPolicy": "IfNotPresent",
+							"Image": "k8s.gcr.io/pause:3.1"
+						}
+					},
+					{
+						"Act": "LIST"
+					},
+					{
+						"Act": "GET"
+					},
+					{
+						"Act": "UPDATE"
+					},
+					{
+						"Act": "DELETE"
+					}
+				],
+				"SleepTimes": [
+					20000,
+					300,
+					300,
+					3000,
+					3000
+				],
+				"Count": 4,
+				"ContainerNamePrefix": "data-plane-"
+			},
+			"Services": {
+				"Actions": [
+					{
+						"Act": "CREATE",
+						"Spec": {
+							"YamlSpec": "./config/default/service.yaml"
+						}
+					},
+					{
+						"Act": "LIST"
+					},
+					{
+						"Act": "GET"
+					},
+					{
+						"Act": "UPDATE"
+					},
+					{
+						"Act": "DELETE"
+					}
+				],
+				"SleepTimes": [
+					20000,
+					300,
+					300,
+					3000,
+					3000
+				],
+				"Count": 20
+			},
+			"RepeatTimes": 0
+		}
+	],
+	"Tags": [
+		{
+			"Key": "testProfile",
+			"Value": "test-default"
+		}
+	],
+	"WavefrontPathDir": "/home/vmware",
+	"SleepTimeAfterRun": 10000
+}
