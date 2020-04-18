@@ -1,13 +1,13 @@
-# KBench
+# K-Bench
 
-(`KBench`) is a framework to benchmark the control and data plane aspects of a 
-Kubernetes infrastructure. KBench provides a configurable way to prescriptively create and 
-manipulate Kubernetes resources at scale and eventually provide the relevant control plane 
-and dataplane performance metrics for the target infrastructure. Example operations include 
-CREATE, UPDATE, LIST, DELETE, RUN, COPY etc. on different types of `Kubernetes` resources 
+(`K-Bench`) is a framework to benchmark the control and data plane aspects of a
+Kubernetes infrastructure. K-Bench provides a configurable way to prescriptively create and
+manipulate Kubernetes resources at scale and eventually provide the relevant control plane
+and dataplane performance metrics for the target infrastructure. Example operations include
+CREATE, UPDATE, LIST, DELETE, RUN, COPY etc. on different types of `Kubernetes` resources
 including `Pod`, `Deployment`, `Service`, `ReplicationController`, etc.
 
-`KBench has the following features:
+`K-Bench has the following features:
 
 * It allows users to control the client side concurrency, the operations, and how these different 
 types of operations are executed in sequence or in parallel. In particular, user can 
@@ -67,7 +67,7 @@ latency, throughput, etc.) for the executed operations on various resource types
 type whose metrics need special consideration is `Pod`, as its operations are typically long-running
 and asynchronous. For `Pod` (and related resource types such as `Deployment`), we introduce
 two sets of metrics, server-side and client-side, to better summarize its performance from different
-perspectives. The server-side metrics design for `Pod` in `KBench` inherits the definition suggested
+perspectives. The server-side metrics design for `Pod` in K-Bench inherits the definition suggested
 by the [kubernetes sig group](https://github.com/kubernetes/community/tree/master/sig-scalability)
 (the exact way those `Pod` metrics are defined can be revealed from the density and performance
 test in the e2e: [density_test.go](https://github.com/kubernetes/kubernetes/blob/master/test/e2e_node/density_test.go)).
