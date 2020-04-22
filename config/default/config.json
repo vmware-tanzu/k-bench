@@ -49,7 +49,7 @@
 					10000,
 					3000
 				],
-				"Count": 6
+				"Count": 3
 			},
 			"Pods": {
 				"Actions": [
@@ -111,17 +111,9 @@
 					3000,
 					3000
 				],
-				"Count": 20
+				"Count": 5
 			},
 			"RepeatTimes": 0
 		}
-	],
-	"Tags": [
-		{
-			"Key": "testProfile",
-			"Value": "test-default"
-		}
-	],
-	"WavefrontPathDir": "/home/vmware",
-	"SleepTimeAfterRun": 10000
+	]
 }
