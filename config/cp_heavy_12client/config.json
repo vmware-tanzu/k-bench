@@ -258,13 +258,5 @@
 				"Count": 12
 			}
 		}
-	],
-	"Tags": [
-		{
-			"Key": "testProfile",
-			"Value": "light-1"
-		}
-	],
-	"WavefrontPathDir": "/home/vmware",
-	"SleepTimeAfterRun": 10000
+	]
 }

@@ -73,6 +73,13 @@ const (
 	CURR_OPERATION string = "current"
 )
 
+var PodRelatedResources = map[string]bool{
+	POD:                    true,
+	DEPLOYMENT:             true,
+	REPLICATION_CONTROLLER: true,
+	STATEFUL_SET:           true,
+}
+
 const AppName string = "kbench"
 
 type Manager interface {

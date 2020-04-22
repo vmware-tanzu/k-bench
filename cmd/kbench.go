@@ -188,10 +188,7 @@ func main() {
 
 	//Run each workload(specified by its config file) one after another in the sorted order
 	for _, testConfig := range testConfigs {
-		fmt.Printf("Running workload... \n")
-		if len(testConfig.Tags) != 0 {
-			fmt.Printf("%v\n", testConfig.Tags[0].Value)
-		}
+		fmt.Printf("Running workload, please check kbench log for details... \n")
 		util.Run(config, testConfig, outDir)
 		time.Sleep(time.Duration(testConfig.SleepTimeAfterRun) * time.Millisecond)
 	}
