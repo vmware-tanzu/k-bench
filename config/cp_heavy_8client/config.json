@@ -262,9 +262,7 @@
 	"Tags": [
 		{
 			"Key": "testProfile",
-			"Value": "light-1"
+			"Value": "heavy-8"
 		}
-	],
-	"WavefrontPathDir": "/home/vmware",
-	"SleepTimeAfterRun": 10000
+	]
 }
