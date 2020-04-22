@@ -83,7 +83,10 @@ Be sure to add a comment to the PR indicating your new changes are ready to revi
 does not generate a notification when you git push.
 
 ## Contribution Testing
-TBD
+All code changes have to be tested locally before being pushed upstream. In addition, more 
+testing may be conducted before merging into the production branches. K-Bench maintainers
+run regular tests and checks to ensure code stability. Any regressions or issues, once detected,
+should be reported in the Github issue tracker.
 
 ## Reporting Bugs and Creating Issues
 
