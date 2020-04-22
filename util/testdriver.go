@@ -319,18 +319,6 @@ func Finalize() {
 
 	now := time.Now()
 
-	wavefrontPathDir := benchConfig.WavefrontPathDir
-	_, err := os.Stat(wavefrontPathDir)
-	if err != nil || len(wavefrontPathDir) == 0 {
-		log.Info("Could not find the wavefront path. Save data to the current directory.")
-		// Get the current working directory
-		dir, error := filepath.Abs(filepath.Dir(os.Args[0]))
-		if error != nil {
-			log.Fatal(error)
-		}
-		wavefrontPathDir = dir
-	}
-
 	for resource, mgr := range mgrs {
 		mgr.CalculateStats()
 		printBoundary()
@@ -344,15 +332,34 @@ func Finalize() {
 		printBoundary()
 		mgr.LogStats()
 
-		if resource == "Pod" || resource == "Deployment" ||
-			resource == "ReplicationController" {
-			successRate := mgr.CalculateSuccessRate()
+		var successRate int
+		if _, ok := manager.PodRelatedResources[resource]; ok {
+			successRate = mgr.CalculateSuccessRate()
 			log.Infof("Pod Creation Success Rate: %v %%", successRate)
-			if successRate > successRateThreshold {
+		}
+
+		wavefrontPathDir := benchConfig.WavefrontPathDir
+
+		// Generate wavefront output if Wavefront is configured
+		if len(wavefrontPathDir) != 0 {
+			_, err := os.Stat(wavefrontPathDir)
+			if err != nil {
+				// If the given path is not valid, use the current working directory
+				dir, error := filepath.Abs(filepath.Dir(os.Args[0]))
+				if error != nil {
+					log.Fatal(error)
+					return
+				}
+				wavefrontPathDir = dir
+			}
+
+			if _, ok := manager.PodRelatedResources[resource]; ok {
+				if successRate > successRateThreshold {
+					mgr.SendMetricToWavefront(now, wfTags, wavefrontPathDir, "")
+				}
+			} else {
 				mgr.SendMetricToWavefront(now, wfTags, wavefrontPathDir, "")
 			}
-		} else {
-			mgr.SendMetricToWavefront(now, wfTags, wavefrontPathDir, "")
 		}
 	}
 }
