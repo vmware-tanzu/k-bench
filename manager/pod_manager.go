@@ -920,7 +920,13 @@ func (mgr *PodManager) LogStats() {
 		log.Infof("%-50v %-10v %-10v %-10v %-10v", m+" pod latency: ", mid, min, max, p99)
 	}
 
-	if mgr.negRes {
+	if mgr.scheToStartLatency.Latency.Mid < 0 {
+		log.Warning("There might be time skew between server and nodes, " +
+			"server side metrics such as scheduling latency stats (server) above is negative.")
+	}
+
+	// If we see negative server side results or server-client latency is larger than client latency by more than 3x
+	if mgr.negRes || mgr.createToReadyLatency.Latency.Mid / 3 > mgr.firstToReadyLatency.Latency.Mid {
 		log.Warning("There might be time skew between client and server, " +
 			"and certain results (e.g., client-server e2e latency) above " +
 			"may have been affected.")
