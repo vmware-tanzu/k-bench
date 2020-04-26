@@ -17,7 +17,7 @@ can also specify parameters such as image for `Pod`, number of replicas for `Dep
 server-side timing adopted in many other existing benchmarks with a client-side approach,
 based on Kubernetes' event callback mechanism. This addressed the coarse-grained timestamp
 issue on the server-side and enhanced the measuing precision.
-* K-Bench also includes benchmarks built into it allows users to study the data plane 
+* K-Bench also includes benchmarks built into it, which allows users to study the data plane 
 performance by independently scaling up and scaling out infrastructure resource usage 
 in terms of compute, memory, I/O and network. The framework comes with blueprints for running 
 these benchmarks in various ways at scale to evaluate specific aspects of a K8s infrastructure.
@@ -60,7 +60,7 @@ created by a specified routine in certain operations. Users labels passed throug
 benchmark configuration specification are attached to resources as u-labels, which can be
 also used for resource dispatch.
 
-## Metrics Definition
+## Control Plane Metrics
 
 After a successful run, the benchmark reports metrics (e.g., number of requests, API invoke
 latency, throughput, etc.) for the executed operations on various resource types. One resource
@@ -93,6 +93,19 @@ the supported metrics:
 
 [^1]: For each latency related metric, there are four values reported: median, min, max, and 99-percentile.
 
+## Data Plane Workloads and Metrics
+
+| Metric [^1] |  Resource Category | Benchmark  | Notes |
+| ------ | ------ | ------ | ------ |
+| Transaction throughput | CPU/Memory | Redis Memtier | Maximum achievable throughput under tight latency constraints | 
+| Transaction latency | CPU/Memory | Redis Memtier | Latency percentiles |
+| I/O bandwidth (IOPS) | I/O | FIO | Synchronous and Asynchronous Rd/Wr bandwidth for 70-30, 100-0 and 0-100 read-write ratios, block sizes on various K8s volumes |
+| I/O Latency (ms) | I/O | Ioping | Disk I/O latency on Ephemeral and Persistent K8s volumes |
+| Network b/w | Network | Iperf3 | Inter-pod TCP, UDP performance with varying pod placements on nodes, zones, regions |
+| Network Latency (ms) | Network | Qperf | Inter-pod network latency for TCP and UDP packets with varying pod placements |
+
+## Infrastructure Diagnostic Telemetry
+
 In addition to the above metrics that the benchmark reports, the Wavefront integration capability
 also enables the collection of many other Wavefront- and Prometheus-defined metrics: memory, CPU,
 storage utilization of nodes, namespaces, pods, cluster level statistics, bytes transferred and
@@ -121,22 +134,37 @@ _~/.kube/config_ file points to a valid and running `Kubernetes` cluster. To ver
 ```
 kubectl get nodes
 ```
-Once you verify that you have a running `Kubernetes` cluster, make sure the default benchmark config
-file _./config/default/config.json_ specify the workload you would like to run. You can modify the
-config file to run workload of your choice. After that, simply run:
+Once you verify that you have a running `Kubernetes` cluster, the workload can be run directly using the kbench go binary or using the run.sh script. The default benchmark config file _./config/default/config.json_ specifies the workload you would like to run. You can modify the config file to run workload of your choice. After that, simply run:
 
 ```
 kbench
+or 
+./run.sh
 ```
 
-If your config file is at a different location, please use _-benchconfig_ option to specify:
+If your config file is at a different location, please use _-benchconfig_ option if invoking the kbench binary directly:
 ```
 kbench -benchconfig filepath
 ```
 If your filepath is a directory, the benchmark will run them one by one.
 
-For more details about how to configure workload, please check the examples under the ./config 
-directory, or read the _benchmark configuration_ section of this document. 
+When using the run.sh script, invoking this script with -h provides the following help:
+
+```
+Usage: ./run.sh -r <run-tag> [-t <comma-separated-tests> -o <output-dir>]
+Example: ./run.sh -r "kbench-run-on-XYZ-cluster"  -t "heavy16,netperf,fio" -o "./"
+
+Valid test names:
+
+all || all_control_plane || all_data_plane || cp_heavy_12client || cp_heavy_8client || cp_light_1client || cp_light_4client || default || dp_fio || dp_netperf_internode || dp_netperf_intranode || dp_redis || predicate_example ||
+
+```
+
+To get details about each of the existing workloads, please check the individual README or config.json in config/<test-name> folder.  For more details about how to configure workload, please check the examples under the ./config directory, or read the _benchmark configuration_ section of this document. 
+ 
+### Adding a new test to use with run.sh
+Add a new folder in config/<test-name>, include the run configuration as config/<test-name>/config.json and run the test with by providing the <test-name> as input to the -t option of run.sh
+
 
 ### Alternative Installing Method: Install Manually with Go (old way with GOROOT and GOPATH)
 
