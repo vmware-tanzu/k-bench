@@ -110,7 +110,6 @@ func main() {
 	var testConfigs []util.TestConfig
 	var configWithPrometheus *util.TestConfig
 
-	//var vSphereInfra vmware.VsphereConfig
 	for _, benchmarkConfigFile := range benchmarkConfigs {
 		configFile, err := os.OpenFile(benchmarkConfigFile, os.O_RDWR, 0666)
 		if err != nil {
