@@ -221,7 +221,7 @@ func checkAndRunResource(
 	typeOps := resourceOps.Type()
 
 	for i := 0; i < resourceOps.NumField(); i++ {
-		if typeOps.Field(i).Name != "RepeatTimes" && typeOps.Field(i).Name != "Predicate" {
+		if _, exist := NonResourceConfigs[typeOps.Field(i).Name]; !exist {
 			resource := resourceOps.Field(i).Interface()
 			count := int(resourceOps.Field(i).FieldByName("Count").Int())
 			if count > 0 {
