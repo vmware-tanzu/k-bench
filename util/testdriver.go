@@ -174,7 +174,7 @@ func Run(kubeConfig *restclient.Config,
 		resourceOps := reflect.ValueOf(op)
 		typeOps := resourceOps.Type()
 		for i := 0; i < resourceOps.NumField(); i++ {
-			if typeOps.Field(i).Name != "RepeatTimes" && typeOps.Field(i).Name != "Predicate" {
+			if _, exist := NonResourceConfigs[typeOps.Field(i).Name]; !exist {
 				count := resourceOps.Field(i).FieldByName("Count").Int()
 				if count > 0 {
 					resName := typeOps.Field(i).Name

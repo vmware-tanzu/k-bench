@@ -111,7 +111,7 @@ also enables the collection of many other Wavefront- and Prometheus-defined metr
 storage utilization of nodes, namespaces, pods, cluster level statistics, bytes transferred and
 received rates between pods, uptime, infrastructure statistics, etc.
 
-## Installing the Benchmark
+## K-Bench Quickstart Guide
 
 There are several ways to build the benchmark.
 
@@ -128,17 +128,21 @@ to install the benchmark.
 If you would like the kbench binary to be copied to /usr/local/bin so that you can directly run
 without specifying the full kbench path, run it with _sudo_.
 
-Once completed, you can start using K-Bench. To run the benchmark, you need to make sure your 
+### Run the Benchmark
+
+Once the installation completes, you can start using K-Bench. To run the benchmark, you need to make sure your 
 _~/.kube/config_ file points to a valid and running `Kubernetes` cluster. To verify this, simply run:
 
 ```
 kubectl get nodes
 ```
-Once you verify that you have a running `Kubernetes` cluster, the workload can be run directly using the kbench go binary or using the run.sh script. The default benchmark config file _./config/default/config.json_ specifies the workload you would like to run. You can modify the config file to run workload of your choice. After that, simply run:
+Once you verify that you have a running `Kubernetes` cluster, the workload can be run directly using the kbench go binary or using the run.sh script. The default benchmark config file ./config/default/config.json specifies the workload you would like to run. You can modify the config file to run workload of your choice. After that, simply run:
 
 ```
 kbench
-or 
+```
+or
+```
 ./run.sh
 ```
 
@@ -156,14 +160,13 @@ Example: ./run.sh -r "kbench-run-on-XYZ-cluster"  -t "heavy16,netperf,fio" -o ".
 
 Valid test names:
 
-all || all_control_plane || all_data_plane || cp_heavy_12client || cp_heavy_8client || cp_light_1client || cp_light_4client || default || dp_fio || dp_netperf_internode || dp_netperf_intranode || dp_redis || predicate_example ||
-
+all || all_control_plane || all_data_plane || cp_heavy_12client || cp_heavy_8client || cp_light_1client || cp_light_4client || default || dp_fio || dp_netperf_internode || dp_netperf_intranode || dp_redis || predicate_example
 ```
 
-To get details about each of the existing workloads, please check the individual README or config.json in config/<test-name> folder.  For more details about how to configure workload, please check the examples under the ./config directory, or read the _benchmark configuration_ section of this document. 
+To get details about each of the existing workloads, please check the individual README or config.json in config/\<test-name\> folder.  For more details about how to configure workload, please check the examples under the ./config directory, or read the _benchmark configuration_ section of this document. 
  
 ### Adding a new test to use with run.sh
-Add a new folder in config/<test-name>, include the run configuration as config/<test-name>/config.json and run the test with by providing the <test-name> as input to the -t option of run.sh
+Add a new folder in config/\<test-name\>, include the run configuration as config/\<test-name\>/config.json and run the test with by providing the \<test-name\> as input to the -t option of run.sh
 
 
 ### Alternative Installing Method: Install Manually with Go (old way with GOROOT and GOPATH)

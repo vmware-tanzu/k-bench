@@ -103,7 +103,7 @@ type PredicateSpec struct {
 	// An implicit condition by specifying this is that the resources must exist
 	// If container_name is specified, the corresponding resource has to be pods in Running phase
 	Resource string
-	Labels string // label_key_name=label_value_name;... TODO: add build-in vars to refer to current oid and tid
+	Labels   string // label_key_name=label_value_name;... TODO: add build-in vars to refer to current oid and tid
 	Command  string // Command to execute (inside the container if container_name above is specified)
 	Expect   string // contains:string or !contains:string
 }
@@ -204,6 +204,12 @@ type WcpOp struct {
 	ClusterRole           ResourceConfig              `json:"ClusterRoles"`
 	ClusterRoleBinding    ResourceConfig              `json:"ClusterRoleBindings"`
 	RepeatTimes           int
+}
+
+// This is used by reflect mechanism to distinguish resource configs vs other options in WcpOp
+var NonResourceConfigs = map[string]bool{
+	"Predicate":   true,
+	"RepeatTimes": true,
 }
 
 type TestConfig struct {
