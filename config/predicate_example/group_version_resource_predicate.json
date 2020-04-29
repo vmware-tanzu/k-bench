@@ -28,21 +28,11 @@
 				],
 				"SleepTimes": [
 					10000,
-					3000,
-					3000,
-					3000,
-					9000,
 					3000
 				],
 				"Count": 2
 			},
                         "RepeatTimes": 0
-		}
-	],
-	"Tags": [
-		{
-			"Key": "testProfile",
-			"Value": "light-1"
 		}
 	]
 }
