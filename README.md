@@ -113,7 +113,8 @@ received rates between pods, uptime, infrastructure statistics, etc.
 
 ## K-Bench Quickstart Guide
 
-There are several ways to build the benchmark.
+To use K-Bench, clone this repo, install the benchmark, and then you can use it to run workload against
+your k8s cluster by following the below instructions.
 
 ### Install using Script
 
