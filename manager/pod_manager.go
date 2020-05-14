@@ -530,7 +530,7 @@ func (mgr *PodManager) Run(n interface{}) error {
 					Param("container", container.Name)
 				runrequest.VersionedParams(&apiv1.PodExecOptions{
 					Container: container.Name,
-					Command:   []string{"/bin/bash", "-c", s.RunCommand},
+					Command:   []string{"/bin/sh", "-c", s.RunCommand},
 					Stdin:     false,
 					Stdout:    true,
 					Stderr:    true,
