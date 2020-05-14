@@ -1,1 +1,1 @@
-go install k-bench/kbench
+go install cmd/kbench.go
