@@ -2,7 +2,7 @@
 
 usage () {
         echo "Usage: $0 -r <run_tag> -i <Host_IP_String> -w <Wavefront_source> [-o <output_folder> -k <ssh_key_file> -p <host_passwd>]";
-        echo "Defaults to /tmp for output folder and the bovine host password" 
+        echo "Defaults to /tmp for output folder and a null host password" 
         exit;
 }
 
@@ -31,7 +31,7 @@ fi
 #Default values
 DEBUG_MODE=0;
 USER="root"
-HOSTPASS='ca$hc0w';
+HOSTPASS='';
 tot_hosts=0;
 SSHCMD="sshpass -e ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no";
 SCPCMD="sshpass -e scp -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no";
