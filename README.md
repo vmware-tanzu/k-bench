@@ -106,14 +106,24 @@ the supported metrics:
 
 ## Infrastructure Diagnostic Telemetry
 
-In addition to the above metrics that the benchmark reports, the Wavefront integration capability
-also enables the collection of many other Wavefront- and Prometheus-defined metrics: memory, CPU,
-storage utilization of nodes, namespaces, pods, cluster level statistics, bytes transferred and
-received rates between pods, uptime, infrastructure statistics, etc.
+In addition to the above metrics that the benchmark reports, K-Bench can be configured to report
+Wavefront- and Prometheus-defined metrics that include: memory, CPU, storage utilization of nodes,
+namespaces, pods, cluster level statistics, bytes transferred and received rates between pods, uptime,
+infrastructure statistics, etc.
 
-To use Wavefront monitoring of the nodes, one can install the Waverunner component using pkg/waverunner/install.sh. Please ensure that the Wavefront URL and token information is updated appropriately in the OS specific install_configure_\* scripts. To start telemetry, invoke pkg/waverunner/WR_wcpwrapper.sh as follows:
-Usage: ./WR_wcpwrapper.sh -r <run_tag> -i <Host_IP_String> -w <Wavefront_source> [-o <output_folder> -k <ssh_key_file> -p <host_passwd>]
-Defaults to /tmp for output folder and a null host password
+To use Wavefront monitoring of the nodes, one can install the Waverunner component using pkg/waverunner/install.sh.
+Please ensure that the Wavefront URL and token information is updated appropriately in the OS specific
+install_configure_\* scripts. To start telemetry, invoke pkg/waverunner/WR_wcpwrapper.sh as follows:
+
+```
+./WR_wcpwrapper.sh -r <run_tag> -i <Host_IP_String> -w <Wavefront_source> [-o <output_folder> -k <ssh_key_file> -p <host_passwd>]
+```
+
+The above command defaults to /tmp for output folder and a null host password.
+
+To use Prometheus as your metrics monitoring mechanism, configure the _PrometheusManifestPaths_  option in
+the K-Bench config file. Please see [top level configuration options](#top-level-configuration-options) section
+below and [prometheus readme](./pkg/prometheus/README.md).
 
 ## K-Bench Quickstart Guide
 
