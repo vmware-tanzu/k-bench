@@ -3,7 +3,7 @@ dir=`dirname $0`;
 
 usage () {
     echo "Usage: $0 -r <run-tag> [-t <comma-separated-tests> -o <output-dir>]"
-    echo "Example: $0 -r \"kbench-run-on-XYZ-cluster\"  -t \"heavy16,netperf,fio\" -o \"./\""
+    echo "Example: $0 -r \"kbench-run-on-XYZ-cluster\"  -t \"cp_heavy16,dp_netperf_internode,dp_fio\" -o \"./\""
     echo "";
     echo "Valid test names:"
     echo "";

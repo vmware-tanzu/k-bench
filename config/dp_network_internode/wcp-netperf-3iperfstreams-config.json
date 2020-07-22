@@ -11,7 +11,7 @@
 			{
 				"Act": "CREATE",
 				"Spec": {
-        				"YamlSpec": "./config/netperf/iperf_service.yaml"
+        				"YamlSpec": "./config/dp_network_internode/iperf_service.yaml"
 				}
 			}
 		],
@@ -32,7 +32,7 @@
 					"PodNamePrefix": "server",
 					"LabelKey": "podtype",
 					"LabelValue": "server",
-				        "YamlSpec": "./config/netperf/iperf_server_pod.yaml"
+				        "YamlSpec": "./config/dp_network_internode/iperf_server_pod.yaml"
                               	}
                        }
                 ],
@@ -72,7 +72,7 @@
 					"PodNamePrefix": "client",
 					"LabelKey": "podtype",
 					"LabelValue": "client",
-				        "YamlSpec": "./config/netperf/iperf_client_pod.yaml"
+				        "YamlSpec": "./config/dp_network_internode/iperf_client_pod.yaml"
                               	}
                        }
                 ],
