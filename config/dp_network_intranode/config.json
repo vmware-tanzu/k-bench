@@ -11,7 +11,7 @@
 			{
 				"Act": "CREATE",
 				"Spec": {
-        				"YamlSpec": "./config/dp_netperf_intranode/iperf_service.yaml"
+        				"YamlSpec": "./config/dp_network_intranode/iperf_service.yaml"
 				}
 			}
 		],
@@ -30,7 +30,7 @@
 				        "Image": "nginx",
 					"Namespace": "kbench-pod-namespace",
 					"PodNamePrefix": "server",
-				        "YamlSpec": "./config/dp_netperf_intranode/iperf_server_pod.yaml"
+				        "YamlSpec": "./config/dp_network_intranode/iperf_server_pod.yaml"
                               	}
                        }
                 ],
@@ -49,7 +49,7 @@
 				        "Image": "nginx",
 					"Namespace": "kbench-pod-namespace",
 					"PodNamePrefix": "client",
-				        "YamlSpec": "./config/dp_netperf_intranode/iperf_client_pod.yaml"
+				        "YamlSpec": "./config/dp_network_intranode/iperf_client_pod.yaml"
                               	}
                        }
                 ],
@@ -157,7 +157,7 @@
 "Tags" : [
 	{
 		"Key": "testProfile",
-		"Value": "dp_netperf_intranode"
+		"Value": "dp_network_intranode"
 	}
 ],
 "WavefrontPathDir": "/home/vmware"
