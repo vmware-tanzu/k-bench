@@ -21,7 +21,7 @@ issue on the server-side and enhanced the measuing precision.
 performance by independently scaling up and scaling out infrastructure resource usage 
 in terms of compute, memory, I/O and network. The framework comes with blueprints for running 
 these benchmarks in various ways at scale to evaluate specific aspects of a K8s infrastructure.
-For E.g., one can use the integrated dp_netperf_internode test to automatically place two pods
+For E.g., one can use the integrated dp_network_internode test to automatically place two pods
 on two different K8s nodes to measure inter-pod network latency and bandwidth. 
 * It supports docker compose files and convert them into Kubernetes spec files.
 * It is integrated with [Prometheus](https://github.com/coreos/kube-prometheus), which can be
@@ -176,7 +176,7 @@ Example: ./run.sh -r "kbench-run-on-XYZ-cluster"  -t "heavy16,netperf,fio" -o ".
 
 Valid test names:
 
-all || all_control_plane || all_data_plane || cp_heavy_12client || cp_heavy_8client || cp_light_1client || cp_light_4client || default || dp_fio || dp_netperf_internode || dp_netperf_intranode || dp_redis || predicate_example
+all || all_control_plane || all_data_plane || cp_heavy_12client || cp_heavy_8client || cp_light_1client || cp_light_4client || default || dp_fio || dp_network_internode || dp_network_intranode || dp_redis || predicate_example
 ```
 
 To get details about each of the existing workloads, please check the individual README or config.json in config/\<test-name\> folder.  For more details about how to configure workload, please check the examples under the ./config directory, or read the _benchmark configuration_ section of this document. 
