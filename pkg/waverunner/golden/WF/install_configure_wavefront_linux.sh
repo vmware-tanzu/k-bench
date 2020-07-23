@@ -29,8 +29,8 @@ install_wavefront_proxy () {
 		check "curl";
 	        sudo -H bash -c "$(curl -sL https://wavefront.com/install)" -- install \
 	            --proxy \
-	            --wavefront-url https://vmware.wavefront.com \
-	            --api-token <Your-Wavefront-Token>
+	            --wavefront-url $1 \
+	            --api-token $2
 	fi
 	service_status=`systemctl status wavefront-proxy 2>&1`;
 	if grep -q "Active: active" <<< $service_status ; then
@@ -141,7 +141,7 @@ install_wavefront_client ()
 
 usage ()
 {
-	echo "Usage: $0 [-p <proxy_address> -f <1_to_force_restart> -h <host_name> -r <run_tag> -v <vm_name>]"; 
+	echo "Usage: $0 [-p <proxy_address> -f <1_to_force_restart> -h <host_name> -r <run_tag> -v <vm_name> -k <Wavefront_token> -u <Wavefront_URL>]"; 
 	echo "If no WF proxy info provided and no local proxy already running, one gets installed on this machine." 
 	echo "The provided host_name is the value to search for, under sources on Wavefront. Defaults to os.Hostname()"
 	exit; 
@@ -153,8 +153,10 @@ force_restart=0;
 proxy="";
 run_tag="";
 host_name=""
+url="https://vmware.wavefront.com"
+token=""
 
-while getopts "h:r:p:f:v:" ARGOPTS ; do
+while getopts "h:r:p:f:v:k:u:" ARGOPTS ; do
     case ${ARGOPTS} in
         h) host_name="$OPTARG"
             ;;
@@ -166,13 +168,17 @@ while getopts "h:r:p:f:v:" ARGOPTS ; do
             ;;
         v) vm_name=$OPTARG
             ;;
+        k) token=$OPTARG
+            ;;
+        u) url=$OPTARG
+            ;;
         ?) usage
             ;;
     esac
 done;
 
 if [ "${proxy}" == "" ]; then
-	install_wavefront_proxy;
+	install_wavefront_proxy $url $token;
 	proxy="localhost"
 fi
 

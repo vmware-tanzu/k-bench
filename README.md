@@ -112,8 +112,7 @@ namespaces, pods, cluster level statistics, bytes transferred and received rates
 infrastructure statistics, etc.
 
 To use Wavefront monitoring of the nodes, one can install the Waverunner component using pkg/waverunner/install.sh.
-Please ensure that the Wavefront URL and token information is updated appropriately in the OS specific
-install_configure_\* scripts. To start telemetry, invoke pkg/waverunner/WR_wcpwrapper.sh as follows:
+Invoking this script without any parameters will give the help menu. To start telemetry, invoke pkg/waverunner/WR_wcpwrapper.sh as follows:
 
 ```
 ./WR_wcpwrapper.sh -r <run_tag> -i <Host_IP_String> -w <Wavefront_source> [-o <output_folder> -k <ssh_key_file> -p <host_passwd>]

@@ -8,11 +8,12 @@ ESXTOP_CPUSUMMARY=1; ESXTOP_CPUSUMMARY_SLEEPTIME="1m";
 
 MEMSTATS=1; MEMSTATS_SLEEPTIME="30s";
 SCHEDSTATS=0; SCHEDSTATS_SLEEPTIME="1m";
-WAVECOUNTER=0; #Ensure you have the desired set of hardware counter events in golden/ESX/WC/EVENTS file. You can use golden/ESX/WC/Wavecounter.py to explore the counters on a host and how to formulate this EVENTS file. 
+WAVECOUNTER=0; #Ensure you have the desired set of hardware counter events in golden/ESX/WC/EVENTS file. You can use golden/ESX/WC/Wavecounter.py to explore the counters on a host and how to formulate this EVENTS file.  
 ESX_DISKSPACE=0; ESX_DISKSPACE_SLEEPTIME="1m";
 
 # DEBUG_MODE prints data sent to wavefront to stdout for debugging and leaves ssh with default log level instead of quite
 DEBUG_MODE=0;
+WRITE_MEMSTATS_TO_DISK=0;
 
 usage () {
 	echo "Usage: $0 -r <run_tag> -i <Host_IP_String> -w <Wavefront_source> [-o <output_folder> -k <ssh_key_file> -p <host_passwd>]";
@@ -39,7 +40,7 @@ pre_run()
 		if [ $ESXTOP_CPUSUMMARY -eq 1 ]; then
 			if $SSHCMD root@${host_ip_arr[$num]} stat "/tmp/esxtop_cpu.sh" \> /dev/null 2\>\&1
         		then
-				echo "Esxtop_cpu.sh already installed on Host"
+				echo "Esxtop_cpu.sh already installed on Host" >> $folder/esx_${host_ip_arr[$num]}_esxtop_cpu;
 			else
 				$SCPCMD $dir/../golden/ESX/esxtop_cpu.sh root@${host_ip_arr[$num]}:/tmp/;
 			fi
@@ -97,6 +98,7 @@ esxtop_process()
 	local esxtop_op="$1";
 	local esxtop_category="ALL"
 	local esxtop_max="$2"
+	local host_ip=$3;
 	local etop_header=`echo "$esxtop_op" | head -n 1`; local etop_body=`echo "$esxtop_op" | tail -n 1`;
 	local h_arr=""; local b_arr="";
 
@@ -151,7 +153,7 @@ esxtop_process()
 				fi
 			fi
                 else 
-			if [ "$Str" != "" ]; then echo "esx.Esxtop.$esxtop_category,esxhost=esx_${host_ip_arr[$num]},runtag=$runtag,app_name_descr=Host-stats-collector,source=$WFsource,name=${entity_running} $Str" | $DEBUG | socat -t 0 - UDP:localhost:8094; fi
+			if [ "$Str" != "" ]; then echo "esx.Esxtop.$esxtop_category,esxhost=esx_${host_ip},runtag=$runtag,app_name_descr=Host-stats-collector,source=$WFsource,name=${entity_running} $Str" | $DEBUG | socat -t 0 - UDP:localhost:8094; fi
 			entity_running=$entity;
                 	if [ "$mybarr" != "" ]; then
 				Str="$metric=${mybarr}";
@@ -159,7 +161,7 @@ esxtop_process()
 				Str="";
 			fi
 		fi
-		if [ $iter -eq $Nelems ]; then echo "esx.Esxtop.$esxtop_category,esxhost=esx_${host_ip_arr[$num]},runtag=$runtag,app_name_descr=Host-stats-collector,source=$WFsource,name=${entity_running} $Str" | $DEBUG | socat -t 0 - UDP:localhost:8094; 
+		if [ $iter -eq $Nelems ]; then echo "esx.Esxtop.$esxtop_category,esxhost=esx_${host_ip},runtag=$runtag,app_name_descr=Host-stats-collector,source=$WFsource,name=${entity_running} $Str" | $DEBUG | socat -t 0 - UDP:localhost:8094; 
 		fi
 		#if [ $(($iter % 5000)) == 0 ]; then echo "iter is $iter"; date; fi
 	}
@@ -170,7 +172,7 @@ collect_esxtop_all()
 	while :
 	do
 		esxtop_all=`$SSHCMD root@${host_ip} "esxtop -a -b -n 1"`;
-		esxtop_process "$esxtop_all" "0"
+		esxtop_process "$esxtop_all" "0" "${host_ip}"
 	        sleep $ESXTOP_ALL_SLEEPTIME;
 	done
 }
@@ -203,7 +205,7 @@ collect_schedstats()
 			set -- $line;
 			Fields=$#;
 			case "$Fields" in
-				17) echo "esx.Schedstats.vcpu-state-times,runtag=$runtag,app_name_descr=Host-stats-collector,source=$WFsource,vcpu=$1,vsmp=${2},name=${3} uptime=${4},charged=${5},sys=${6},sysoverlap=${7},run=${8},wait=${9},waitIdle=${10},ready=${11},costop=${12},maxlimited=${13},vmktime=${14},guestTime=${15},stickyTime=${16},activeSticky=${17}" | $DEBUG | socat -t 0 - UDP:localhost:8094
+				17) echo "esx.Schedstats.vcpu-state-times,runtag=$runtag,esxhost=esx_${host_ip},app_name_descr=Host-stats-collector,source=$WFsource,vcpu=$1,vsmp=${2},name=${3} uptime=${4},charged=${5},sys=${6},sysoverlap=${7},run=${8},wait=${9},waitIdle=${10},ready=${11},costop=${12},maxlimited=${13},vmktime=${14},guestTime=${15},stickyTime=${16},activeSticky=${17}" | $DEBUG | socat -t 0 - UDP:localhost:8094
 	        		;;
 			esac;
 		done
@@ -213,7 +215,7 @@ collect_schedstats()
 			set -- $line;
 			Fields=$#;
 			case "$Fields" in
-				11) echo "esx.sched-stats.vcpu-load,runtag=$runtag,app_name_descr=Host-stats-collector,source=$WFsource,vcpu=$1,vsmp=${2},name=${3} last-short=${4},medium=${5},long=${6},predict-short=${7},medium=${8},long=${9},runEWMA=${10},sleepEWMA=${11}" | $DEBUG | socat -t 0 - UDP:localhost:8094
+				11) echo "esx.sched-stats.vcpu-load,runtag=$runtag,esxhost=esx_${host_ip},app_name_descr=Host-stats-collector,source=$WFsource,vcpu=$1,vsmp=${2},name=${3} last-short=${4},medium=${5},long=${6},predict-short=${7},medium=${8},long=${9},runEWMA=${10},sleepEWMA=${11}" | $DEBUG | socat -t 0 - UDP:localhost:8094
 				;;
 			esac;
 		done
@@ -223,11 +225,11 @@ collect_schedstats()
 	                set -- $line;
 	                Fields=$#;
 			if [ $Fields -gt 7 ]; then
-	                	echo "esx.sched-stats.vcpu-comminfo,runtag=$runtag,app_name_descr=Host-stats-collector,source=$WFsource,vcpu=$1,leader=${2},name=${3},isRel=${4},samePCPU=${8} type=${5},id=${6},rate=${7}" | $DEBUG | socat -t 0 - UDP:localhost:8094
+	                	echo "esx.sched-stats.vcpu-comminfo,runtag=$runtag,esxhost=esx_${host_ip},app_name_descr=Host-stats-collector,source=$WFsource,vcpu=$1,leader=${2},name=${3},isRel=${4},samePCPU=${8} type=${5},id=${6},rate=${7}" | $DEBUG | socat -t 0 - UDP:localhost:8094
 			fi
 	                for((num=9;num <= ${Fields};num+=5))
 	                {
-	                        eval WFString="esx.sched-stats.vcpu-comminfo,runtag=$runtag,app_name_descr=Host-stats-collector,source=$WFsource,vcpu=$1,leader=${2},name=${3},isRel=\${$((num))},samePCPU=\${$((num+4))}\ type=\${$((num+1))},id=\${$((num+2))},rate=\${$((num+3))}";
+	                        eval WFString="esx.sched-stats.vcpu-comminfo,runtag=$runtag,esxhost=esx_${host_ip},app_name_descr=Host-stats-collector,source=$WFsource,vcpu=$1,leader=${2},name=${3},isRel=\${$((num))},samePCPU=\${$((num+4))}\ type=\${$((num+1))},id=\${$((num+2))},rate=\${$((num+3))}";
 	                	echo "$WFString" | $DEBUG | socat -t 0 - UDP:localhost:8094
 	                }
 	        done
@@ -236,7 +238,7 @@ collect_schedstats()
 		echo "$BODY" | grep --line-buffered "[0-9]" | while read line; do
 	                set -- $line;
 	                Fields=$#;
-	                WFString="esx.sched-stats.vcpu-run-times,runtag=$runtag,app_name_descr=Host-stats-collector,source=$WFsource,vcpu=$1,vsmp=${2},name=${3} cpu0=${4}"
+	                WFString="esx.sched-stats.vcpu-run-times,runtag=$runtag,esxhost=esx_${host_ip},app_name_descr=Host-stats-collector,source=$WFsource,vcpu=$1,vsmp=${2},name=${3} cpu0=${4}"
 	                for((num=5;num <= ${Fields};num++))
 	                {
 	                        eval val="\${${num}}";
@@ -249,7 +251,7 @@ collect_schedstats()
 		echo "$BODY" | grep --line-buffered "[0-9]" | while read line; do
 	                set -- $line;
 	                Fields=$#;
-	                WFString="esx.sched-stats.vcpu-node-run-times,runtag=$runtag,app_name_descr=Host-stats-collector,source=$WFsource,vcpu=$1,vsmp=${2},name=${3} node0=${4}"
+	                WFString="esx.sched-stats.vcpu-node-run-times,runtag=$runtag,esxhost=esx_${host_ip},app_name_descr=Host-stats-collector,source=$WFsource,vcpu=$1,vsmp=${2},name=${3} node0=${4}"
 	                for((num=5;num <= ${Fields};num++))
 	                {
 	                        eval val="\${${num}}";
@@ -263,7 +265,7 @@ collect_schedstats()
 	                set -- $line;
 	                Fields=$#;
 	                case "$Fields" in
-	                        11) echo "esx.sched-stats.numa-clients,runtag=$runtag,app_name_descr=Host-stats-collector,source=$WFsource,groupName=$1,groupID=${2},clientID=${3},homeNode=${4},affinity=${5} nWorlds=${6},vmmWorlds=${7},localMem=${8},remoteMem=${9},currLocal%=${10},cummLocal%=${11}" | $DEBUG | socat -t 0 - UDP:localhost:8094
+	                        11) echo "esx.sched-stats.numa-clients,runtag=$runtag,esxhost=esx_${host_ip},app_name_descr=Host-stats-collector,source=$WFsource,groupName=$1,groupID=${2},clientID=${3},homeNode=${4},affinity=${5} nWorlds=${6},vmmWorlds=${7},localMem=${8},remoteMem=${9},currLocal%=${10},cummLocal%=${11}" | $DEBUG | socat -t 0 - UDP:localhost:8094
 	                        ;;
 	                esac;
 	        done
@@ -273,7 +275,7 @@ collect_schedstats()
 	                set -- $line;
 	                Fields=$#;
 	                case "$Fields" in
-	                        9) echo "esx.sched-stats.numa-migration,runtag=$runtag,app_name_descr=Host-stats-collector,source=$WFsource,groupName=$1,groupID=${2},clientID=${3} balanceMig=${4},loadMig=${5},localityMig=${6},longTermMig=${7},monitorMig=${8},pageMigRate=${9}" | $DEBUG | socat -t 0 - UDP:localhost:8094
+	                        9) echo "esx.sched-stats.numa-migration,runtag=$runtag,esxhost=esx_${host_ip},app_name_descr=Host-stats-collector,source=$WFsource,groupName=$1,groupID=${2},clientID=${3} balanceMig=${4},loadMig=${5},localityMig=${6},longTermMig=${7},monitorMig=${8},pageMigRate=${9}" | $DEBUG | socat -t 0 - UDP:localhost:8094
 	                        ;;
 	                esac;
 	        done
@@ -283,7 +285,7 @@ collect_schedstats()
 			set -- $line;
 			Fields=$#;
 			case "$Fields" in
-				12) echo "esx.sched-stats.numa-cnode,runtag=$runtag,app_name_descr=Host-stats-collector,source=$WFsource,groupName=$1,groupID=${2},clientID=${3},nodeID=${4} time=${5},timePct=${6},memory=${7},memoryPct=${8},anonMem=${9},anonMemPct=${10},avgEpochs=${11},memMigHere=${12}" | $DEBUG | socat -t 0 - UDP:localhost:8094
+				12) echo "esx.sched-stats.numa-cnode,runtag=$runtag,esxhost=esx_${host_ip},app_name_descr=Host-stats-collector,source=$WFsource,groupName=$1,groupID=${2},clientID=${3},nodeID=${4} time=${5},timePct=${6},memory=${7},memoryPct=${8},anonMem=${9},anonMemPct=${10},avgEpochs=${11},memMigHere=${12}" | $DEBUG | socat -t 0 - UDP:localhost:8094
 				;;
 			esac;
 		done
@@ -293,7 +295,7 @@ collect_schedstats()
 			set -- $line;
 			Fields=$#;
 			case "$Fields" in
-				9) echo "esx.sched-stats.numa-pnode,runtag=$runtag,app_name_descr=Host-stats-collector,source=$WFsource,nodeID=$1 used=${2},idle=${3},entitled=${4},owed=${5},loadAvgPct=${6},nVcpu=${7},freeMem=${8},totalMem=${9}" | $DEBUG | socat -t 0 - UDP:localhost:8094
+				9) echo "esx.sched-stats.numa-pnode,runtag=$runtag,esxhost=esx_${host_ip},app_name_descr=Host-stats-collector,source=$WFsource,nodeID=$1 used=${2},idle=${3},entitled=${4},owed=${5},loadAvgPct=${6},nVcpu=${7},freeMem=${8},totalMem=${9}" | $DEBUG | socat -t 0 - UDP:localhost:8094
 				;;
 			esac;
 		done
@@ -303,7 +305,7 @@ collect_schedstats()
 			set -- $line;
 			Fields=$#;
 			case "$Fields" in
-				2) echo "esx.sched-stats.numa-global,runtag=$runtag,app_name_descr=Host-stats-collector,source=$WFsource ${1}=${2}" | $DEBUG | socat -t 0 - UDP:localhost:8094
+				2) echo "esx.sched-stats.numa-global,runtag=$runtag,esxhost=esx_${host_ip},app_name_descr=Host-stats-collector,source=$WFsource ${1}=${2}" | $DEBUG | socat -t 0 - UDP:localhost:8094
 				;;
 			esac;
 		done
@@ -313,9 +315,9 @@ collect_schedstats()
 			set -- $line;
 			Fields=$#;
 			case "$Fields" in
-				2) echo "esx.sched-stats.ncpus,runtag=$runtag,app_name_descr=Host-stats-collector,source=$WFsource ${2}=${1}" | $DEBUG | socat -t 0 - UDP:localhost:8094
+				2) echo "esx.sched-stats.ncpus,runtag=$runtag,esxhost=esx_${host_ip},app_name_descr=Host-stats-collector,source=$WFsource ${2}=${1}" | $DEBUG | socat -t 0 - UDP:localhost:8094
 				;;
-				3) echo "esx.sched-stats.ncpus,runtag=$runtag,app_name_descr=Host-stats-collector,source=$WFsource ${2}${3}=${1}" | $DEBUG | socat -t 0 - UDP:localhost:8094
+				3) echo "esx.sched-stats.ncpus,runtag=$runtag,esxhost=esx_${host_ip},app_name_descr=Host-stats-collector,source=$WFsource ${2}${3}=${1}" | $DEBUG | socat -t 0 - UDP:localhost:8094
 				;;
 			esac;
 		done
@@ -325,7 +327,7 @@ collect_schedstats()
 			set -- $line;
 			Fields=$#;
 			case "$Fields" in
-				22) echo "esx.sched-stats.cpu,runtag=$runtag,app_name_descr=Host-stats-collector,source=$WFsource,vcpu=$1,vsmp=${2},type=${3},name=${4},status=${6},wait=${9},units=${15},group=${17},affinity=${22} uptime=${5},usedsec=${7},syssec=${8},waitsec=${10},idlesec=${11},readysec=${12},min=${13},max=${14},shares=${16},emin=${18},cpu=${19},prio=${20},mode=${21}" | $DEBUG | socat -t 0 - UDP:localhost:8094
+				22) echo "esx.sched-stats.cpu,runtag=$runtag,esxhost=esx_${host_ip},app_name_descr=Host-stats-collector,source=$WFsource,vcpu=$1,vsmp=${2},type=${3},name=${4},status=${6},wait=${9},units=${15},group=${17},affinity=${22} uptime=${5},usedsec=${7},syssec=${8},waitsec=${10},idlesec=${11},readysec=${12},min=${13},max=${14},shares=${16},emin=${18},cpu=${19},prio=${20},mode=${21}" | $DEBUG | socat -t 0 - UDP:localhost:8094
 				;;
 			esac;
 		done
@@ -341,14 +343,16 @@ collect_memstats()
 
 	while :
 	do
-	 	date >> $folder/esx_${host_ip}.memstats;	
+		local vmstats=`$SSHCMD root@${host_ip} memstats -r vm-stats` 
 		elapsedtime=`echo $(( $SECONDS - $start_time ))`;
 		elapsedtime_print=`echo Elapsed time: $elapsedtime`;
-		echo $elapsedtime_print >> $folder/esx_${host_ip}.memstats
-		echo "" >> $folder/esx_${host_ip}.memstats;
-	 
-		local vmstats=`$SSHCMD root@${host_ip} memstats -r vm-stats` 
-		echo "$vmstats" >> $folder/esx_${host_ip}.memstats;
+
+		if [ $WRITE_MEMSTATS_TO_DISK -ne 0 ]; then
+		 	date >> $folder/esx_${host_ip}.memstats;	
+			echo $elapsedtime_print >> $folder/esx_${host_ip}.memstats
+			echo "" >> $folder/esx_${host_ip}.memstats;
+			echo "$vmstats" >> $folder/esx_${host_ip}.memstats;
+		fi
 		echo "$vmstats" | grep --line-buffered -v ":" | grep --line-buffered "[0-9]" | while read line; do
 			set -- $line;
 			Fields=$#;
@@ -370,7 +374,9 @@ collect_memstats()
 
 
 		local gstats=`$SSHCMD root@${host_ip} memstats -r guest-stats` 
-		echo "$gstats" >> $folder/esx_${host_ip}.memstats;
+		if [ $WRITE_MEMSTATS_TO_DISK -ne 0 ]; then
+			echo "$gstats" >> $folder/esx_${host_ip}.memstats;
+		fi
 		echo "$gstats" | grep --line-buffered -v ":" | grep --line-buffered "[0-9]" | while read line; do
 			set -- $line;
 			Fields=$#;
@@ -383,7 +389,9 @@ collect_memstats()
 		done
 
 		local lpagestats=`$SSHCMD root@${host_ip} memstats -r lpage-stats`;
-		echo "$lpagestats" >> $folder/esx_${host_ip}.memstats;
+		if [ $WRITE_MEMSTATS_TO_DISK -ne 0 ]; then
+			echo "$lpagestats" >> $folder/esx_${host_ip}.memstats;
+		fi
 		echo "$lpagestats" | grep --line-buffered -v ":" | grep --line-buffered "[0-9]" | while read line; do
 			set -- $line;
 			Fields=$#;
@@ -395,7 +403,9 @@ collect_memstats()
 		done
 
 		local compstats=`$SSHCMD root@${host_ip} memstats -r comp-stats`; 
-		echo "$compstats" >> $folder/esx_${host_ip}.memstats;
+		if [ $WRITE_MEMSTATS_TO_DISK -ne 0 ]; then
+			echo "$compstats" >> $folder/esx_${host_ip}.memstats;
+		fi
 		echo "$compstats" | grep --line-buffered -v ":" | grep --line-buffered "[0-9]" | while read line; do
 			set -- $line;
 			Fields=$#;
@@ -404,6 +414,37 @@ collect_memstats()
 				;;
 			esac;
 		done
+
+
+		local groupstats=`$SSHCMD root@${host_ip} memstats -r group-stats`;
+		if [ $WRITE_MEMSTATS_TO_DISK -ne 0 ]; then
+			echo "$groupstats" >> $folder/esx_${host_ip}.memstats;
+		fi
+		echo "$groupstats" | grep --line-buffered "[0-9]" | while read line; do
+			set -- $line;
+			Fields=$#;
+			case "$Fields" in
+				#33) echo "esx.Mem.Groupstats,esxhost=esx_${host_ip},runtag=$runtag,app_name_descr=Host-stats-collector,source=$WFsource,gid=${1},name=${2} parGid=${3},nChild=${4},min=${5},max=${6},minLimit=${7},shares=${8},conResv=${9},availResv=${10},memSize=${11},memSizePeak=${12},iMin=${13},eMin=${14},eMinPeak=${15},rMinPeak=${16},rMinChildPeak=${17},bMin=${18},bMax${19},bShares${20},fShares=${21},ovhdResv=${22},ovhd=${23},allocTgt=${24},consumed=${25},consumedPeak=${26},touched=${27},bActive=${28},sharedSaved=${29},mps=${30},throttlePct=${31},flags=${32},tag=${33}" | $DEBUG | socat -t 0 - UDP:localhost:8094
+				33) echo "esx.Mem.Groupstats,esxhost=esx_${host_ip},runtag=$runtag,app_name_descr=Host-stats-collector,source=$WFsource,gid=${1},name=${2} memSize=${11},consumed=${25},touched=${27}" | $DEBUG | socat -t 0 - UDP:localhost:8094
+				;;
+			esac;
+		done
+
+		local uwstats=`$SSHCMD root@${host_ip} memstats -r uw-stats`;
+		if [ $WRITE_MEMSTATS_TO_DISK -ne 0 ]; then
+			echo "$uwstats" >> $folder/esx_${host_ip}.memstats;
+		fi
+		echo "$uwstats" | grep --line-buffered "[0-9]" | while read line; do
+			set -- $line;
+			Fields=$#;
+			case "$Fields" in
+				#30) echo "esx.Mem.Uwstats,esxhost=esx_${host_ip},runtag=$runtag,app_name_descr=Host-stats-collector,source=$WFsource type                 name   schedGrp parSchedGroup   worldGrp        min        max   minLimit     shares  totalResv pinnedResv memSizeLimit    memSize  memBStore swapBStore     mapped    touched  swappable        cow   pageable pageableUnacct     pinned prealloced        shm   allocTgt   consumed    swapTgt    swapped useReliableMem swapScope" | $DEBUG | socat -t 0 - UDP:localhost:8094
+				30) echo "esx.Mem.Uwstats,esxhost=esx_${host_ip},runtag=$runtag,app_name_descr=Host-stats-collector,source=$WFsource,name=${2} memSize=${13},consumed=${26},touched=${17}" | $DEBUG | socat -t 0 - UDP:localhost:8094
+				;;
+			esac;
+		done
+
+
 	        sleep $MEMSTATS_SLEEPTIME;
 	done
 
@@ -439,7 +480,7 @@ SCPCMD="sshpass -e scp -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o Stri
 declare -A WCPID;
 declare -A WCPID2;
 DEBUG="tee"
-folder='\tmp\'
+folder='/tmp/'
 dir=`dirname $0`;
 if [ $DEBUG_MODE -eq 1 ]; then
 	SSHCMD="sshpass -e ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no";
