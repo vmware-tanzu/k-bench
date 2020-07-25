@@ -1,2 +1,4 @@
 Run dp_network_intranode individually using the following command:
 cd ../../; ./run.sh -t "dp_network_intranode" -r <run-tag> -o <output-dir>"
+
+Please use the qperf results for the network latency and the iperf3 results for bandwidth. 

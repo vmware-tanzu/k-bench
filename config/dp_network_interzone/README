@@ -1,2 +1,5 @@
 Run dp_network_interzone individually using the following command:
 cd ../../; ./run.sh -t "dp_network_interzone" -r <run-tag> -o <output-dir>"
+
+Please use the qperf results for the network latency and the iperf3 results for bandwidth.
+

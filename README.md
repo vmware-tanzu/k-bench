@@ -97,11 +97,12 @@ the supported metrics:
 
 | Metric [^1] |  Resource Category | Benchmark  | Notes |
 | ------ | ------ | ------ | ------ |
-| Transaction throughput | CPU/Memory | Redis Memtier | Maximum achievable throughput under tight latency constraints | 
-| Transaction latency | CPU/Memory | Redis Memtier | Latency percentiles |
+| Transaction throughput | CPU/Memory | Redis Memtier | Maximum achievable throughput aggregated across pods in a cluster| 
+| Transaction latency | CPU/Memory | Redis Memtier | Latency for the injected SET/GET transactions |
+| Pod density | CPU/Memory | Redis Memtier | Transaction throughput and latency for given pod density |
 | I/O bandwidth (IOPS) | I/O | FIO | Synchronous and Asynchronous Rd/Wr bandwidth for 70-30, 100-0 and 0-100 read-write ratios, block sizes on various K8s volumes |
 | I/O Latency (ms) | I/O | Ioping | Disk I/O latency on Ephemeral and Persistent K8s volumes |
-| Network b/w | Network | Iperf3 | Inter-pod TCP, UDP performance with varying pod placements on nodes, zones, regions |
+| Network b/w | Network | Iperf3 | Inter-pod TCP, UDP performance with varying pod placements on nodes, zones |
 | Network Latency (ms) | Network | Qperf | Inter-pod network latency for TCP and UDP packets with varying pod placements |
 
 ## Infrastructure Diagnostic Telemetry
@@ -167,21 +168,22 @@ kbench -benchconfig filepath
 ```
 If your filepath is a directory, the benchmark will run them one by one.
 
-When using the run.sh script, invoking this script with -h provides the following help:
+When using the run.sh script, invoking this script with -h provides the following help menu:
 
 ```
 Usage: ./run.sh -r <run-tag> [-t <comma-separated-tests> -o <output-dir>]
-Example: ./run.sh -r "kbench-run-on-XYZ-cluster"  -t "heavy16,netperf,fio" -o "./"
+Example: ./run.sh -r "kbench-run-on-XYZ-cluster"  -t "cp_heavy16,dp_netperf_internode,dp_fio" -o "./"
 
 Valid test names:
 
-all || all_control_plane || all_data_plane || cp_heavy_12client || cp_heavy_8client || cp_light_1client || cp_light_4client || default || dp_fio || dp_network_internode || dp_network_intranode || dp_redis || predicate_example
+all || all_control_plane || all_data_plane || cp_heavy_12client || cp_heavy_8client || cp_light_1client || cp_light_4client || default || dp_fio || dp_network_internode || dp_network_interzone || dp_network_intranode || dp_redis || dp_redis_density || predicate_example || 
+
 ```
 
 To get details about each of the existing workloads, please check the individual README or config.json in config/\<test-name\> folder.  For more details about how to configure workload, please check the examples under the ./config directory, or read the _benchmark configuration_ section of this document. 
  
 ### Adding a new test to use with run.sh
-Add a new folder in config/\<test-name\>, include the run configuration as config/\<test-name\>/config.json and run the test with by providing the \<test-name\> as input to the -t option of run.sh
+Add a new folder in config/\<test-name\>, include the run configuration as config/\<test-name\>/config.json and run the test by providing the \<test-name\> as input to the -t option of run.sh
 
 
 ### Alternative Installing Method: Install Manually with Go (old way with GOROOT and GOPATH)
