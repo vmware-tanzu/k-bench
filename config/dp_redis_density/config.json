@@ -22,7 +22,7 @@
                        }
                 ],
                 "SleepTimes": [50000],
-                "Count": 1
+                "Count": 9
 	}
   },
   {
@@ -47,7 +47,7 @@
                        }
                 ],
                 "SleepTimes": [5000],
-                "Count": 1
+                "Count": 9
 	}
   },
   {
@@ -61,12 +61,12 @@
 					"LabelKey": "podtype",
 					"LabelValue": "redisworker",
 					"MatchGoroutine": true,
-					"Command": "cd /memtier_benchmark; ./memtier_benchmark > /tmp/redisoutput/memtier.out 2> /tmp/redisoutput/memtier.err;"
+					"Command": "cd /memtier_benchmark; ./memtier_benchmark --test-time=900 > /tmp/redisoutput/memtier.out 2> /tmp/redisoutput/memtier.err;"
                               	}
                        }
                 ],
                 "SleepTimes": [5000],
-                "Count": 1
+                "Count": 9
 	}
   },
   {
@@ -81,12 +81,12 @@
                                 	"ContainerPath": "/tmp/redisoutput",
                                 	"Upload": false,
                                         "MatchOperation": "ALL",
-                                        "MatchGoroutine": false
+                                        "MatchGoroutine": true
                                	}
                         }
                  ],
                  "SleepTimes": [20000],
-                 "Count": 1
+                 "Count": 9
         }
   }
 ],

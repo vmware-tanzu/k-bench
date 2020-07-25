@@ -1,0 +1,2 @@
+Run redis individually using the following command:
+cd ../../; ./run.sh -t "dp_redis_density" -r <run-tag> -o <output-dir>"

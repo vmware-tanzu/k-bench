@@ -1,0 +1,164 @@
+{
+"BlockingLevel": "operation",
+"Timeout": 60000,
+"CheckingInterval": 3000,
+"Cleanup": false,
+"Operations" : [
+  {
+	"Services":
+	{
+		"Actions": [
+			{
+				"Act": "CREATE",
+				"Spec": {
+        				"YamlSpec": "./config/dp_network_interzone/iperf_service.yaml"
+				}
+			}
+		],
+		"SleepTimes": [100],
+        	"Count": 1
+	}
+  },
+  {
+       "Pods":
+       {
+       	"Actions": [
+                       {
+                               "Act": "CREATE",
+                               "Spec": {
+					"ImagePullPolicy": "IfNotPresent",
+				        "Image": "nginx",
+					"Namespace": "kbench-pod-namespace",
+					"PodNamePrefix": "server",
+				        "YamlSpec": "./config/dp_network_interzone/iperf_server_pod.yaml"
+                              	}
+                       }
+                ],
+                "SleepTimes": [100],
+                "Count": 1
+       }
+  },
+  {
+       "Pods":
+       {
+       	"Actions": [
+                       {
+                               "Act": "CREATE",
+                               "Spec": {
+					"ImagePullPolicy": "IfNotPresent",
+				        "Image": "nginx",
+					"Namespace": "kbench-pod-namespace",
+					"PodNamePrefix": "client",
+				        "YamlSpec": "./config/dp_network_interzone/iperf_client_pod.yaml"
+                              	}
+                       }
+                ],
+                "SleepTimes": [100000],
+                "Count": 1
+       }
+  },
+  {
+       "Pods":
+       {
+       	"Actions": [
+                       {
+                               "Act": "RUN",
+                               "Spec": {
+					"Namespace": "kbench-pod-namespace",
+					"LabelKey": "podtype",
+					"LabelValue": "server",
+					"MatchGoroutine": true,
+					"Command": "mkdir /tmp/perfoutput; ifconfig > /tmp/perfoutput/ifconfig_server; iperf3 -s -p 5101 >> /tmp/perfoutput/iperfserver.out 2>> /tmp/perfoutput/iperfserver.err &"
+                              	}
+                       }
+                ],
+                "SleepTimes": [10000],
+                "Count": 1
+       }
+  },
+  {
+       "Pods":
+       {
+       	"Actions": [
+                       {
+                               "Act": "RUN",
+                               "Spec": {
+					"Namespace": "kbench-pod-namespace",
+					"LabelKey": "podtype",
+					"LabelValue": "client",
+					"MatchGoroutine": true,
+					"Command": "mkdir /tmp/perfoutput; ifconfig > /tmp/perfoutput/ifconfig_client; ping -c 10 iperfserver.kbench-service-oid-0-tid-0.kbench-pod-namespace.svc.cluster.local > /tmp/perfoutput/ping.out 2> /tmp/perfoutput/ping.err; iperf3 -t 90 -T s1 -p 5101 -O 10 -c iperfserver.kbench-service-oid-0-tid-0.kbench-pod-namespace.svc.cluster.local >> /tmp/perfoutput/iperfclient.out 2>> /tmp/perfoutput/iperfclient.err;  iperf3 -t 90 -T s1 -p 5101 -O 10 -u -w256k -b 0 -c iperfserver.kbench-service-oid-0-tid-0.kbench-pod-namespace.svc.cluster.local >> /tmp/perfoutput/iperfclient_UDP.out 2>> /tmp/perfoutput/iperfclient_UDP.err; iperf3 -t 90 -T s1 -p 5101 -M 8800 -O 10 -c iperfserver.kbench-service-oid-0-tid-0.kbench-pod-namespace.svc.cluster.local >> /tmp/perfoutput/iperfclient_Jumbo.out 2>> /tmp/perfoutput/iperfclient_Jumbo.err;  iperf3 -t 90 -T s1 -p 5101 -O 10 -u -l 8800 -w256k -b 0 -c iperfserver.kbench-service-oid-0-tid-0.kbench-pod-namespace.svc.cluster.local >> /tmp/perfoutput/iperfclient_Jumbo_UDP.out 2>> /tmp/perfoutput/iperfclient_Jumbo_UDP.err"
+                              	}
+                       }
+                ],
+                "SleepTimes": [10000],
+                "Count": 1
+       }
+  },
+  {
+       "Pods":
+       {
+       	"Actions": [
+                       {
+                               "Act": "RUN",
+                               "Spec": {
+					"Namespace": "kbench-pod-namespace",
+					"LabelKey": "podtype",
+					"LabelValue": "server",
+					"MatchGoroutine": true,
+					"Command": "pkill iperf3; /tmp/qperf-0.4.9/src/qperf  >> /tmp/perfoutput/qperfserver.out 2>> /tmp/perfoutput/qperfserver.err &"
+                              	}
+                       }
+                ],
+                "SleepTimes": [10000],
+                "Count": 1
+       }
+  },
+  {
+       "Pods":
+       {
+       	"Actions": [
+                       {
+                               "Act": "RUN",
+                               "Spec": {
+					"Namespace": "kbench-pod-namespace",
+					"LabelKey": "podtype",
+					"LabelValue": "client",
+					"MatchGoroutine": true,
+					"Command": "/tmp/qperf-0.4.9/src/qperf -v iperfserver.kbench-service-oid-0-tid-0.kbench-pod-namespace.svc.cluster.local tcp_lat udp_lat tcp_bw udp_bw  >> /tmp/perfoutput/qperfclient.out 2>> /tmp/perfoutput/qperfclient.err"
+                              	}
+                       }
+                ],
+                "SleepTimes": [10000],
+                "Count": 1
+       }
+  },
+  {
+        "Pods":
+        {
+        	"Actions": [
+                        {
+                                "Act": "COPY",
+                                "Spec": {
+        	                        "Namespace": "kbench-pod-namespace",
+                                	"LocalPath": "./",
+                                	"ContainerPath": "/tmp/perfoutput",
+                                	"Upload": false,
+                                        "MatchOperation": "ALL",
+                                        "MatchGoroutine": false
+                               	}
+                        }
+                 ],
+                 "SleepTimes": [20000],
+                 "Count": 1
+        }
+  }
+],
+"Tags" : [
+	{
+		"Key": "testProfile",
+		"Value": "dp_network_interzone"
+	}
+],
+"WavefrontPathDir": "/home/vmware"
+}

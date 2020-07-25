@@ -1,2 +1,0 @@
-<WL_VM_tag> <Total_Heap_size_MB> <nursery_pcnt> <workload_mode> <JBB_presetIR> <time_secs_Preset_mode> <start_pcnt> <step> <tiered_workers> # Do not delete this line #
-JBB_L 30000 90 C-PRESET 6000 X 70 0.2 24,12,6 
