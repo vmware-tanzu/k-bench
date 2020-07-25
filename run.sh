@@ -66,5 +66,5 @@ for test in $tests; do
 		kubectl apply -f ./config/dp_fio/fio_pvc.yaml
 	fi
 	kbench -benchconfig="$dir/config/$test/config.json" -outdir="$folder/$test";
-	$dir/cleanup.sh > /dev/null 2>&1;
+#	$dir/cleanup.sh > /dev/null 2>&1;
 done
