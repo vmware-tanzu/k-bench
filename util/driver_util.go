@@ -1154,7 +1154,7 @@ func waitForPodRelatedOps(
 		// Wait for pod deletion
 		selector := labels.Set{
 			"opnum": strconv.Itoa(opIdx),
-			"type": t,
+			"type":  t,
 		}.AsSelector().String()
 		options := metav1.ListOptions{LabelSelector: selector}
 		for totalWait < timeout {
@@ -1168,6 +1168,18 @@ func waitForPodRelatedOps(
 				totalWait += interval
 			} else {
 				break
+			}
+		}
+		if totalWait >= timeout {
+			pods, _ := driverClient.CoreV1().Pods("").List(options)
+			gp := int64(0)
+			fg := metav1.DeletePropagationForeground
+			if len(pods.Items) > 0 {
+				log.Infof("Timed out waiting for %v deletion, "+
+					"%v remaining, force delete...",
+					resKind, len(pods.Items))
+				driverClient.CoreV1().Pods(pods.Items[0].Namespace).DeleteCollection(&metav1.DeleteOptions{
+					GracePeriodSeconds: &gp, PropagationPolicy: &fg}, options)
 			}
 		}
 	} else if mgr, ok := mgrs[resKind]; ok {
