@@ -1,0 +1,29 @@
+{
+	"BlockingLevel": "operation",
+	"Timeout": 540000,
+	"CheckingInterval": 3000,
+	"Cleanup": false,
+	"Operations": [
+		{
+			"PersistentVolumes": {
+				"Actions": [
+					{
+						"Act": "CREATE",
+						"Spec": {
+							"YamlSpec": "./config/cp_other_resources/pv_pvc/pv.yaml"
+						}
+					},
+					{
+						"Act": "LIST"
+					}
+				],
+				"SleepTimes": [
+					10000,
+					3000
+				],
+				"Count": 2
+			},
+			"RepeatTimes": 0
+		}
+	]
+}
