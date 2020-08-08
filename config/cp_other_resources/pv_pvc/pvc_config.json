@@ -9,22 +9,22 @@
 				"Actions": [
 					{
 						"Act": "CREATE",
-                                                "Spec": {
-                                                    "YamlSpec": "./config/cp_other_resources/pv_pvc/pvc.yaml"
-                                                }
+						"Spec": {
+							"YamlSpec": "./config/cp_other_resources/pv_pvc/pvc.yaml"
+						}
 					},
-                                        {
-                                                "Act": "LIST"
-                                        }
+					{
+						"Act": "LIST"
+					}
 				],
-                                "Namespace": "test-namespace",
+				"Namespace": "test-namespace",
 				"SleepTimes": [
 					10000,
 					3000
 				],
 				"Count": 2
 			},
-                        "RepeatTimes": 0
+			"RepeatTimes": 0
 		}
 	]
 }

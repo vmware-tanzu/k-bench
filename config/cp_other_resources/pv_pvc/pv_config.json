@@ -9,13 +9,13 @@
 				"Actions": [
 					{
 						"Act": "CREATE",
-                                                "Spec": {
-                                                    "YamlSpec": "./config/cp_other_resources/pv_pvc/pv.yaml"
-                                                }
+						"Spec": {
+							"YamlSpec": "./config/cp_other_resources/pv_pvc/pv.yaml"
+						}
 					},
-                                        {
-                                                "Act": "LIST"
-                                        }
+					{
+						"Act": "LIST"
+					}
 				],
 				"SleepTimes": [
 					10000,
@@ -23,7 +23,7 @@
 				],
 				"Count": 2
 			},
-                        "RepeatTimes": 0
+			"RepeatTimes": 0
 		}
 	]
 }
