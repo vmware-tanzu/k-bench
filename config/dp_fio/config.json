@@ -21,7 +21,7 @@
                               	}
                        }
                 ],
-                "SleepTimes": [50000],
+                "SleepTimes": [100000],
                 "Count": 1
 	}
   },
