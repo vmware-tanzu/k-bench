@@ -6,15 +6,24 @@ metadata:
   labels:
     name: myredisserverclient
 spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values:
+            - w4-hs2-k0705.eng.vmware.com
   containers:
   - image: nginx 
     resources:
       limits:
-        memory: "4000Mi"
-        cpu: "8000m"
-      requests:
-        memory: "4000Mi"
+        memory: "12000Mi"
         cpu: "2000m"
+      requests:
+        cpu: "50m"
+        memory: "4000Mi"
         ephemeral-storage: "10Gi"
     command: ["/bin/sh","-c"]
     args: 
