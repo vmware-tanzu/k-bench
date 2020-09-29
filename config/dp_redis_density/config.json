@@ -17,12 +17,12 @@
 					"PodNamePrefix": "myredis",
 					"LabelKey": "podtype",
 					"LabelValue": "redisworker",
-				        "YamlSpec": "./config/dp_redis/redis_pod.yaml"
+				        "YamlSpec": "./config/dp_redis_density/redis_pod.yaml"
                               	}
                        }
                 ],
-                "SleepTimes": [50000],
-                "Count": 9
+                "SleepTimes": [100000],
+                "Count": 25
 	}
   },
   {
@@ -47,7 +47,7 @@
                        }
                 ],
                 "SleepTimes": [5000],
-                "Count": 9
+                "Count": 25
 	}
   },
   {
@@ -61,12 +61,12 @@
 					"LabelKey": "podtype",
 					"LabelValue": "redisworker",
 					"MatchGoroutine": true,
-					"Command": "cd /memtier_benchmark; ./memtier_benchmark --test-time=900 > /tmp/redisoutput/memtier.out 2> /tmp/redisoutput/memtier.err;"
+					"Command": "cd /memtier_benchmark; ./memtier_benchmark --test-time=600 > /tmp/redisoutput/memtier.out 2> /tmp/redisoutput/memtier.err;"
                               	}
                        }
                 ],
                 "SleepTimes": [5000],
-                "Count": 9
+                "Count": 25
 	}
   },
   {
@@ -86,7 +86,7 @@
                         }
                  ],
                  "SleepTimes": [20000],
-                 "Count": 9
+                 "Count": 25
         }
   }
 ],
