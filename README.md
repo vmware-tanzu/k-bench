@@ -7,7 +7,7 @@ and dataplane performance metrics for the target infrastructure. Example operati
 CREATE, UPDATE, LIST, DELETE, RUN, COPY etc. on different types of `Kubernetes` resources
 including `Pod`, `Deployment`, `Service`, `ReplicationController`, etc.
 
-`K-Bench has the following features:
+K-Bench has the following features:
 
 * It allows users to control the client side concurrency, the operations, and how these different 
 types of operations are executed in sequence or in parallel. In particular, user can 
