@@ -35,6 +35,8 @@ import (
 	"k8s.io/client-go/util/homedir"
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	// _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	// Uncomment the following line to load the oidc plugin (only required to authenticate with oidc to your kubernetes cluster).
+	// _ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 	"sort"
 	"time"
 )
