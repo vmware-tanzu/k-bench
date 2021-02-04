@@ -50,7 +50,7 @@ fi
 trap "post_run" TERM SIGINT 
 ssh_key=""
 
-while getopts "o:r:p:i:w:k:" ARGOPTS ; do
+while getopts "o:r:p:i:w:k:t:" ARGOPTS ; do
     case ${ARGOPTS} in
         o) folder="$OPTARG"
             ;;
@@ -63,6 +63,8 @@ while getopts "o:r:p:i:w:k:" ARGOPTS ; do
         i) ip_string=$OPTARG
             ;;
         w) WFsource=$OPTARG
+            ;;
+        t) WFtoken=$OPTARG
             ;;
         ?) usage
             ;;
@@ -110,7 +112,11 @@ else
 	        $SCPCMD $dir/golden/WF/telegraf_linux.conf ${USER}@${host_ip_arr[$num]}:/tmp/
 	        $SCPCMD $dir/golden/WF/waverunner_guest.pp ${USER}@${host_ip_arr[$num]}:/tmp/
 	        $SCPCMD $dir/golden/LIN/collect_guest_stats.sh ${USER}@${host_ip_arr[$num]}:/tmp/
-	        $SSHCMD ${USER}@${host_ip_arr[$num]} "/tmp/install_configure_wavefront_linux.sh" &
+		if [ "${WFtoken}" != "" ]; then 
+	        	$SSHCMD ${USER}@${host_ip_arr[$num]} "/tmp/install_configure_wavefront_linux.sh -k $WFtoken" &
+		else
+	        	$SSHCMD ${USER}@${host_ip_arr[$num]} "/tmp/install_configure_wavefront_linux.sh" &
+		fi
 	}
 
 	#Wait until all installations are done
