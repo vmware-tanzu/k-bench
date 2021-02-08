@@ -36,7 +36,7 @@
 					"LabelKey": "podtype",
 					"LabelValue": "fioworker",
 					"MatchGoroutine": true,
-					"Command": "mkdir /tmp/fiooutput; fio --name=random --ioengine=sync --iodepth=16 --rw=randrw --rwmixread=70 --bs=4k --direct=1 --size=1g --numjobs=4 --group_reporting=1 --eta=always --eta-newline=10s --ramp_time=10 --time_based --runtime=60 --gtod_reduce=1 --directory=/mnt/fio-volume > /tmp/fiooutput/fio_sync_randR70W30.out 2> /tmp/fiooutput/fio_sync_randR70W30.err; fio --name=random --ioengine=sync --iodepth=16 --rw=randrw --rwmixread=70 --bs=4k --direct=1 --size=1g --numjobs=4 --group_reporting=1 --eta=always --eta-newline=10s --ramp_time=10 --time_based --runtime=60 --gtod_reduce=1 --directory=/ > /tmp/fiooutput/fio_root_sync_randR70W30.out 2> /tmp/fiooutput/fio_root_sync_randR70W30.err;"
+					"Command": "mkdir /tmp/fiooutput; fio --name=random --ioengine=sync --iodepth=16 --rw=randrw --rwmixread=70 --bs=4k --direct=1 --size=1g --numjobs=4 --group_reporting=1 --eta=always --eta-newline=10s --ramp_time=400 --time_based --runtime=60 --gtod_reduce=1 --directory=/mnt/fio-volume > /tmp/fiooutput/fio_sync_randR70W30.out 2> /tmp/fiooutput/fio_sync_randR70W30.err; fio --name=random --ioengine=sync --iodepth=16 --rw=randrw --rwmixread=70 --bs=4k --direct=1 --size=1g --numjobs=4 --group_reporting=1 --eta=always --eta-newline=10s --ramp_time=10 --time_based --runtime=60 --gtod_reduce=1 --directory=/ > /tmp/fiooutput/fio_root_sync_randR70W30.out 2> /tmp/fiooutput/fio_root_sync_randR70W30.err;"
                               	}
                        }
                 ],
