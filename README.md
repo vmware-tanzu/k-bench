@@ -146,7 +146,7 @@ without specifying the full kbench path, run it with _sudo_.
 ### Run the Benchmark
 
 Once the installation completes, you can start using K-Bench. To run the benchmark, you need to make sure your 
-_~/.kube/config_ file points to a valid and running `Kubernetes` cluster. To verify this, you may install 
+_~/.kube/config_ file or the KUBECONFIG environment variable points to a valid and running `Kubernetes` cluster. To verify this, you may install 
  kubectl (or if you already have it installed) and simply run:
 
 ```
