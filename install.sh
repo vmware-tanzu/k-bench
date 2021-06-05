@@ -73,6 +73,11 @@ install_go () {
     fi
 
     tar -C $(dirname $MY_GOROOT) -xzf $HOME/$GOFILE
+    # remove go tarball
+    if [ -f $HOME/$GOFILE ]; then
+	rm $HOME/$GOFILE
+	echo "$HOME/$GOFILE is removed"
+    fi
 
     read -p "Would you like to add Go to your profile .bashrc (Y/n)? " -n 1 -r
     echo
