@@ -334,8 +334,8 @@ For examples on how to use predicates, you may check config file samples under .
 
 Please contact the project members and read CONTRIBUTING.md if you are interested in making contributions.
 
-## Project Leads
-Yong Li and Karthik Ganesan
+## Project Lead
+Karthik Ganesan
 
 ## Contributors
-Helen Liu
+Yong Li and Helen Liu
