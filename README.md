@@ -143,11 +143,13 @@ to install the benchmark.
 If you would like the kbench binary to be copied to /usr/local/bin so that you can directly run
 without specifying the full kbench path, run it with _sudo_.
 
+On systems like Ubuntu, just being able to use sudo is enough and one does not explicitly need to be the "root" user.
+
 ### Run the Benchmark
 
 Once the installation completes, you can start using K-Bench. To run the benchmark, you need to make sure your 
 _~/.kube/config_ file points to a valid and running `Kubernetes` cluster. To verify this, you may install 
- kubectl (or if you already have it installed) and simply run:
+ kubectl (this expects a ~/.kube/cofig file in place) and simply run:
 
 ```
 kubectl get nodes
@@ -335,7 +337,9 @@ For examples on how to use predicates, you may check config file samples under .
 Please contact the project members and read CONTRIBUTING.md if you are interested in making contributions.
 
 ## Project Leads
-Yong Li and Karthik Ganesan
+Karthik Ganesan
+Email: ganesank@vmware.com for questions and comments
 
 ## Contributors
+Yong Li 
 Helen Liu
