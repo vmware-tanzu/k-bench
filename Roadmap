@@ -1,0 +1,9 @@
+Roadmap:
+
+Control plane
+     1. Support for tracking events and latencies across CRDs like VMs (WIP)
+
+Data plane
+     
+     1. Like we have workloads to stress Compute, memory, I/O, network components, we should also include workloads to stress accelerators like GPUs from K8s
+     2. Include workloads with most common network patterns between pods, like mesh etc

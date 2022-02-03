@@ -2,6 +2,9 @@
 
 usage () {
         echo "Usage: $0 -r <run_tag> -i <Host_IP_String> -w <Wavefront_source> [-o <output_folder> -k <ssh_key_file> -p <host_passwd>]";
+	echo "run_tag is a tag you give to tag your data for each run on Wavefront"
+	echo "Host_IP_String is a comma separated list of host IPs that you want to monitor"
+	echo "Wavefront source is a unique string you provide to identify your data source on Wavefront"
         echo "Defaults to /tmp for output folder and a null host password" 
         exit;
 }

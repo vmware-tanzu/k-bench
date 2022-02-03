@@ -16,7 +16,7 @@ can also specify parameters such as image for `Pod`, number of replicas for `Dep
 * For control-plane (life-cycle management) performance, the benchmark complements the
 server-side timing adopted in many other existing benchmarks with a client-side approach,
 based on Kubernetes' event callback mechanism. This addressed the coarse-grained timestamp
-issue on the server-side and enhanced the measuing precision.
+issue on the server-side and enhanced the measuring precision.
 * K-Bench also includes benchmarks built into it, which allows users to study the data plane 
 performance by independently scaling up and scaling out infrastructure resource usage 
 in terms of compute, memory, I/O and network. The framework comes with blueprints for running 
@@ -72,7 +72,7 @@ by the [kubernetes sig group](https://github.com/kubernetes/community/tree/maste
 (the exact way those `Pod` metrics are defined can be revealed from the density and performance
 test in the e2e: [density_test.go](https://github.com/kubernetes/kubernetes/blob/master/test/e2e_node/density_test.go)).
 The client-side set of metrics, collected by an event callback mechanism, is a more accurate
-reflection on the time taken for `Pod` states transition end-to-end. The below table describes all
+reflection on the time taken for `Pod` states to transition end-to-end. The below table describes all
 the supported metrics:
  
 
@@ -143,11 +143,15 @@ to install the benchmark.
 If you would like the kbench binary to be copied to /usr/local/bin so that you can directly run
 without specifying the full kbench path, run it with _sudo_.
 
+On systems like Ubuntu, just being able to use sudo is enough and one does not explicitly need to be the "root" user. Also, please ensure that the K8s nodes and the client on which you run K-Bench have their times synchronized as K-Bench uses both client and server side time stamps to calculate latencies.
+
 ### Run the Benchmark
 
 Once the installation completes, you can start using K-Bench. To run the benchmark, you need to make sure your 
+
 _~/.kube/config_ file or the KUBECONFIG environment variable points to a valid and running `Kubernetes` cluster. To verify this, you may install 
- kubectl (or if you already have it installed) and simply run:
+ kubectl (this expects a ~/.kube/config file in place, which you can copy from the Master node) and simply run:
+
 
 ```
 kubectl get nodes
@@ -227,7 +231,7 @@ finds binaries and tools:
 export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 ```
 Now, you are ready to build the benchmark. To build, you can either use the below command to
-install the `kbench` binary it into _$GOPATH/bin_:
+install the `kbench` binary into _$GOPATH/bin_:
 
 ```
 go install cmd/kbench.go
@@ -335,7 +339,9 @@ For examples on how to use predicates, you may check config file samples under .
 Please contact the project members and read CONTRIBUTING.md if you are interested in making contributions.
 
 ## Project Leads
-Yong Li and Karthik Ganesan
+Karthik Ganesan
+Email: ganesank@vmware.com for questions and comments
 
 ## Contributors
+Yong Li 
 Helen Liu
