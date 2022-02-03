@@ -143,13 +143,13 @@ to install the benchmark.
 If you would like the kbench binary to be copied to /usr/local/bin so that you can directly run
 without specifying the full kbench path, run it with _sudo_.
 
-On systems like Ubuntu, just being able to use sudo is enough and one does not explicitly need to be the "root" user.
+On systems like Ubuntu, just being able to use sudo is enough and one does not explicitly need to be the "root" user. Also, please ensure that the K8s nodes and the client on which you run K-Bench have their times synchronized as K-Bench uses both client and server side time stamps to calculate latencies.
 
 ### Run the Benchmark
 
 Once the installation completes, you can start using K-Bench. To run the benchmark, you need to make sure your 
 _~/.kube/config_ file points to a valid and running `Kubernetes` cluster. To verify this, you may install 
- kubectl (this expects a ~/.kube/cofig file in place) and simply run:
+ kubectl (this expects a ~/.kube/config file in place, which you can copy from the Master node) and simply run:
 
 ```
 kubectl get nodes
