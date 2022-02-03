@@ -46,7 +46,9 @@ var defaultoutDir = "."
 
 func main() {
 	var kubeconfig *string
-	if home := homedir.HomeDir(); home != "" {
+	if conf, exists := os.LookupEnv("KUBECONFIG"); exists {
+		kubeconfig = &conf
+	} else if home := homedir.HomeDir(); home != "" {
 		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"),
 			"(optional) absolute path to the kubeconfig file")
 	} else {

@@ -148,8 +148,10 @@ On systems like Ubuntu, just being able to use sudo is enough and one does not e
 ### Run the Benchmark
 
 Once the installation completes, you can start using K-Bench. To run the benchmark, you need to make sure your 
-_~/.kube/config_ file points to a valid and running `Kubernetes` cluster. To verify this, you may install 
+
+_~/.kube/config_ file or the KUBECONFIG environment variable points to a valid and running `Kubernetes` cluster. To verify this, you may install 
  kubectl (this expects a ~/.kube/config file in place, which you can copy from the Master node) and simply run:
+
 
 ```
 kubectl get nodes
