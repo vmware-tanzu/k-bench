@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kbench-service-oid-0-tid-0
+  namespace: kbench-pod-namespace
+spec:
+  selector:
+    name: mynetperf 
+  clusterIP: None
+  ports:
+  - name: foo # Actually, no port is needed.
+    port: 1234
+    targetPort: 1234

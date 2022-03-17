@@ -1,0 +1,5 @@
+Run dp_netperf_internode individually using the following command:
+cd ../../; ./run.sh -t "dp_netperf_internode" -r <run-tag> -o <output-dir>
+
+Please use the netperf results for network performance measurement.
+

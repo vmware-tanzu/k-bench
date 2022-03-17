@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mynetperfserverpod
+  namespace: kbench-pod-namespace
+  labels:
+    name: mynetperf
+    podtype: server
+spec:
+  hostname: netperfserver
+  subdomain: kbench-service-oid-0-tid-0
+  containers:
+  - image: gcr.io/google-containers/nginx
+    resources:
+      limits:
+        memory: "4200Mi"
+        cpu: "16000m"
+      requests:
+        memory: "4200Mi"
+        cpu: "1000m"
+        ephemeral-storage: "5Gi"
+    command: ["/bin/sh","-c"]
+    args: 
+      - wget https://github.com/HewlettPackard/netperf/archive/netperf-2.7.0.tar.gz;
+        tar xf netperf-2.7.0.tar.gz && cd netperf-netperf-2.7.0;
+        ./configure && make && make install;
+        sleep infinity;
+    name: netperfservercontainer
