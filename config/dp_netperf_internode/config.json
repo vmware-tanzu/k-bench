@@ -1,0 +1,164 @@
+{
+"BlockingLevel": "operation",
+"Timeout": 60000,
+"CheckingInterval": 3000,
+"Cleanup": false,
+"Operations" : [
+  {
+	"Services":
+	{
+		"Actions": [
+			{
+				"Act": "CREATE",
+				"Spec": {
+        				"YamlSpec": "./config/dp_netperf_internode/netperf_service.yaml"
+				}
+			}
+		],
+		"SleepTimes": [100],
+        	"Count": 1
+	}
+  },
+  {
+       "Pods":
+       {
+       	"Actions": [
+                       {
+                               "Act": "CREATE",
+                               "Spec": {
+					"ImagePullPolicy": "IfNotPresent",
+				        "Image": "gcr.io/google-containers/nginx",
+					"Namespace": "kbench-pod-namespace",
+					"PodNamePrefix": "server",
+				        "YamlSpec": "./config/dp_netperf_internode/netperf_server_pod.yaml"
+                              	}
+                       }
+                ],
+                "SleepTimes": [100],
+                "Count": 1
+       }
+  },
+  {
+       "Pods":
+       {
+       	"Actions": [
+                       {
+                               "Act": "CREATE",
+                               "Spec": {
+					"ImagePullPolicy": "IfNotPresent",
+				        "Image": "gcr.io/google-containers/nginx",
+					"Namespace": "kbench-pod-namespace",
+					"PodNamePrefix": "client",
+				        "YamlSpec": "./config/dp_netperf_internode/netperf_client_pod.yaml"
+                              	}
+                       }
+                ],
+                "SleepTimes": [100000],
+                "Count": 1
+       }
+  },
+  {
+       "Pods":
+       {
+       	"Actions": [
+                       {
+                               "Act": "RUN",
+                               "Spec": {
+					"Namespace": "kbench-pod-namespace",
+					"LabelKey": "podtype",
+					"LabelValue": "server",
+					"MatchGoroutine": true,
+					"Command": "mkdir /tmp/perfoutput; ifconfig > /tmp/perfoutput/ifconfig_server; for i in `seq 1 32`; do if [ $i -lt 10 ]; then `netserver -p 510$i >> /tmp/perfoutput/netperfserver.out 2>> /tmp/perfoutput/netperfserver.err &`; else `netserver -p 51$i >> /tmp/perfoutput/netperfserver.out 2>> /tmp/perfoutput/netperfserver.err &` ; fi; done"
+                              	}
+                       }
+                ],
+                "SleepTimes": [10000],
+                "Count": 1
+       }
+  },
+  {
+       "Pods":
+       {
+        "Actions": [
+                       {
+                               "Act": "RUN",
+                               "Spec": {
+                                        "Namespace": "kbench-pod-namespace",
+                                        "LabelKey": "podtype",
+                                        "LabelValue": "client",
+                                        "MatchGoroutine": true,
+                                        "Command": "mkdir /tmp/perfoutput; ifconfig > /tmp/perfoutput/ifconfig_server; for i in `seq 1 32`; do if [ $i -lt 10 ]; then `netserver -p 510$i >> /tmp/perfoutput/netperfserver.out 2>> /tmp/perfoutput/netperfserver.err &`; else `netserver -p 51$i >> /tmp/perfoutput/netperfserver.out 2>> /tmp/perfoutput/netperfserver.err &` ; fi; done"
+                                }
+                       }
+                ],
+                "SleepTimes": [10000],
+                "Count": 1
+       }
+  },
+  {
+       "Pods":
+       {
+       	"Actions": [
+                       {
+                               "Act": "RUN",
+                               "Spec": {
+					"Namespace": "kbench-pod-namespace",
+					"LabelKey": "podtype",
+					"LabelValue": "client",
+					"MatchGoroutine": true,
+					"Command": "mkdir /tmp/perfoutput; ifconfig > /tmp/perfoutput/ifconfig_client; ping -c 10 netperfserver.kbench-service-oid-0-tid-0.kbench-pod-namespace.svc.cluster.local > /tmp/perfoutput/ping.out 2> /tmp/perfoutput/ping.err; for i in `seq 1 32`; do if [ $i -lt 10 ]; then `netperf -H netperfserver.kbench-service-oid-0-tid-0.kbench-pod-namespace.svc.cluster.local -p 510$i -l 600 -t TCP_STREAM -- -s 256K -S 256K -m 16K -M 16K >> /tmp/perfoutput/netperfclient.out 2>> /tmp/perfoutput/netperfclient.err &`; else `netperf -H netperfserver.kbench-service-oid-0-tid-0.kbench-pod-namespace.svc.cluster.local -p 51$i -l 600 -t TCP_STREAM -- -s 256K -S 256K -m 16K -M 16K >> /tmp/perfoutput/netperfclient.out 2>> /tmp/perfoutput/netperfclient.err &`; fi; done;"
+                              	}
+                       }
+                ],
+                "SleepTimes": [10000],
+                "Count": 1
+       }
+  },
+  {
+       "Pods":
+       {
+        "Actions": [
+                       {
+                               "Act": "RUN",
+                               "Spec": {
+                                        "Namespace": "kbench-pod-namespace",
+                                        "LabelKey": "podtype",
+                                        "LabelValue": "server",
+                                        "MatchGoroutine": true,
+                                        "Command": "mkdir /tmp/perfoutput; ifconfig > /tmp/perfoutput/ifconfig_client; ping -c 10 netperfclient.kbench-service-oid-0-tid-0.kbench-pod-namespace.svc.cluster.local > /tmp/perfoutput/ping.out 2> /tmp/perfoutput/ping.err; for i in `seq 1 32`; do if [ $i -lt 10 ]; then `netperf -H netperfclient.kbench-service-oid-0-tid-0.kbench-pod-namespace.svc.cluster.local -p 510$i -l 600 -t TCP_STREAM -- -s 256K -S 256K -m 16K -M 16K >> /tmp/perfoutput/netperfclient.out 2>> /tmp/perfoutput/netperfclient.err &`; else `netperf -H netperfclient.kbench-service-oid-0-tid-0.kbench-pod-namespace.svc.cluster.local -p 51$i -l 600 -t TCP_STREAM -- -s 256K -S 256K -m 16K -M 16K >> /tmp/perfoutput/netperfclient.out 2>> /tmp/perfoutput/netperfclient.err &`; fi; done; sleep 600"
+                                }
+                       }
+                ],
+                "SleepTimes": [10000],
+                "Count": 1
+       }
+  },
+  {
+        "Pods":
+        {
+        	"Actions": [
+                        {
+                                "Act": "COPY",
+                                "Spec": {
+        	                        "Namespace": "kbench-pod-namespace",
+                                	"LocalPath": "./",
+                                	"ContainerPath": "/tmp/perfoutput",
+                                	"Upload": false,
+                                        "MatchOperation": "ALL",
+                                        "MatchGoroutine": false
+                               	}
+                        }
+                 ],
+                 "SleepTimes": [20000],
+                 "Count": 1
+        }
+  }
+],
+"Tags" : [
+	{
+		"Key": "testProfile",
+		"Value": "dp_netperf_internode"
+	}
+],
+"WavefrontPathDir": "/home/vmware"
+}
