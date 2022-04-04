@@ -18,6 +18,7 @@ package util
 
 import (
 	log "github.com/sirupsen/logrus"
+	"context"
 	"io/ioutil"
 	"k-bench/manager"
 	appsv1 "k8s.io/api/apps/v1"
@@ -35,11 +36,43 @@ import (
 	"time"
 )
 
+// func checkAndRunVM(
+// 	kubeConfig *restclient.Config,
+// 	op WcpOp,
+// 	opIdx int,
+// 	maxClients map[string]int) string {
+// 	if len(op.Virtualmachines.Actions) > 0 {
+
+// 		var vmMgr *manager.VmManager
+
+// 		if mgr, ok := mgrs[manager.]; ok {
+// 			vmMgr = mgr.(*manager.VmManager)
+// 		} else {
+// 			mgrs[manager.VIRTUALMACHINE], _ = manager.GetManager(manager.VIRTUALMACHINE)
+// 			vmMgr = mgrs[manager.VIRTUALMACHINE].(*manager.VmManager)
+// 			vmMgr.Init(kubeConfig, vmNamespace, true,
+// 				maxClients[manager.VIRTUALMACHINE], vmType)
+// 		}
+
+// 		log.Infof("Performing VM actions in operation %v", opIdx)
+
+// 		for i := 0; i < op.Virtualmachines.Count; i++ {
+// 			go runVmActions(vmMgr, op.Virtualmachines, opIdx, i)
+// 			wg.Add(1)
+// 		}
+
+// 		return op.Virtualmachines.Actions[len(op.Virtualmachines.Actions)-1].Act
+// 	}
+// 	return ""
+// }
+
+
 func checkAndRunPod(
 	kubeConfig *restclient.Config,
 	op WcpOp,
 	opIdx int,
 	maxClients map[string]int) string {
+	log.Info("Driver Util checkAndRunPod called.........")
 	if len(op.Pod.Actions) > 0 {
 
 		var podMgr *manager.PodManager
@@ -395,7 +428,7 @@ func runPodActions(
 					spec.Labels[lk] = lv
 				}
 			}
-
+			log.Info("Driver Util Create Pod called.........")
 			ae := mgr.ActionFuncs[manager.CREATE_ACTION](mgr, spec)
 			if ae != nil {
 				log.Error(ae)
@@ -1158,7 +1191,7 @@ func waitForPodRelatedOps(
 		}.AsSelector().String()
 		options := metav1.ListOptions{LabelSelector: selector}
 		for totalWait < timeout {
-			pods, _ := driverClient.CoreV1().Pods("").List(options)
+			pods, _ := driverClient.CoreV1().Pods("").List(context.Background(), options)
 
 			if len(pods.Items) > 0 {
 				log.Infof("Not all %v have been deleted, "+
@@ -1171,15 +1204,15 @@ func waitForPodRelatedOps(
 			}
 		}
 		if totalWait >= timeout {
-			pods, _ := driverClient.CoreV1().Pods("").List(options)
-			gp := int64(0)
-			fg := metav1.DeletePropagationForeground
+			pods, _ := driverClient.CoreV1().Pods("").List(context.Background(), options)
+			// gp := int64(0)
+			// fg := metav1.DeletePropagationForeground
 			if len(pods.Items) > 0 {
 				log.Infof("Timed out waiting for %v deletion, "+
 					"%v remaining, force delete...",
 					resKind, len(pods.Items))
-				driverClient.CoreV1().Pods(pods.Items[0].Namespace).DeleteCollection(&metav1.DeleteOptions{
-					GracePeriodSeconds: &gp, PropagationPolicy: &fg}, options)
+				// driverClient.CoreV1().Pods(pods.Items[0].Namespace).DeleteCollection(context.Background(), &metav1.DeleteOptions{
+				// 	GracePeriodSeconds: &gp, PropagationPolicy: &fg}, options)
 			}
 		}
 	} else if mgr, ok := mgrs[resKind]; ok {

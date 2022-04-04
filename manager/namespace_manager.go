@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
+	"context"
 
 	log "github.com/sirupsen/logrus"
 	//appsv1 "k8s.io/api/apps/v1"
@@ -119,7 +120,7 @@ func (mgr *NamespaceManager) Create(spec interface{}) error {
 		tid, _ := strconv.Atoi(s.Labels["tid"])
 		cid := tid % len(mgr.clientsets)
 		startTime := metav1.Now()
-		_, err := mgr.clientsets[cid].CoreV1().Namespaces().Create(s)
+		_, err := mgr.clientsets[cid].CoreV1().Namespaces().Create(context.Background(), s, metav1.CreateOptions{})
 
 		latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
@@ -150,7 +151,7 @@ func (mgr *NamespaceManager) List(n interface{}) error {
 		cid := s.Tid % len(mgr.clientsets)
 
 		startTime := metav1.Now()
-		nss, err := mgr.clientsets[cid].CoreV1().Namespaces().List(options)
+		nss, err := mgr.clientsets[cid].CoreV1().Namespaces().List(context.Background(), options)
 		latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
 		if err != nil {
@@ -178,7 +179,7 @@ func (mgr *NamespaceManager) Get(n interface{}) error {
 		cid := s.Tid % len(mgr.clientsets)
 		startTime := metav1.Now()
 		ns, err := mgr.clientsets[cid].CoreV1().Namespaces().Get(
-			s.Name, metav1.GetOptions{})
+			context.Background(), s.Name, metav1.GetOptions{})
 		latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
 		if err != nil {
@@ -207,7 +208,7 @@ func (mgr *NamespaceManager) Update(n interface{}) error {
 		options := GetListOptions(s)
 
 		cid := s.Tid % len(mgr.clientsets)
-		nsList, err := mgr.clientsets[cid].CoreV1().Namespaces().List(options)
+		nsList, err := mgr.clientsets[cid].CoreV1().Namespaces().List(context.Background(), options)
 		if err != nil {
 			return err
 		}
@@ -216,7 +217,7 @@ func (mgr *NamespaceManager) Update(n interface{}) error {
 
 		for _, currNs := range nss {
 			startTime := metav1.Now()
-			ns, ue := mgr.clientsets[cid].CoreV1().Namespaces().Update(&currNs)
+			ns, ue := mgr.clientsets[cid].CoreV1().Namespaces().Update(context.Background(), &currNs, metav1.UpdateOptions{})
 			latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
 			if ue != nil {
@@ -244,7 +245,7 @@ func (mgr *NamespaceManager) Delete(n interface{}) error {
 		cid := s.Tid % len(mgr.clientsets)
 
 		options := GetListOptions(s)
-		nsList, err := mgr.clientsets[cid].CoreV1().Namespaces().List(options)
+		nsList, err := mgr.clientsets[cid].CoreV1().Namespaces().List(context.Background(), options)
 		if err != nil {
 			return err
 		}
@@ -255,7 +256,7 @@ func (mgr *NamespaceManager) Delete(n interface{}) error {
 			log.Infof("Deleting namespace %v", currNs.Name)
 			// Delete the namespace
 			startTime := metav1.Now()
-			mgr.clientsets[cid].CoreV1().Namespaces().Delete(currNs.Name, nil)
+			mgr.clientsets[cid].CoreV1().Namespaces().Delete(context.Background(), currNs.Name, metav1.DeleteOptions{})
 
 			latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
@@ -275,7 +276,7 @@ func (mgr *NamespaceManager) DeleteAll() error {
 
 	options := metav1.ListOptions{LabelSelector: labels.SelectorFromSet(
 		labels.Set{"app": AppName}).String()}
-	nss, err := mgr.client.CoreV1().Namespaces().List(options)
+	nss, err := mgr.client.CoreV1().Namespaces().List(context.Background(), options)
 
 	if err != nil {
 		return err

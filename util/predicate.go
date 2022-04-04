@@ -18,6 +18,7 @@ package util
 
 import (
 	"bytes"
+	"context"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -79,7 +80,7 @@ func checkPredicateOk(clientset *kubernetes.Clientset,
 
 		if resName != "" {
 			// If resource name is specified, labels are ignored.
-			obj, _ := client.Resource(gvr).Namespace(ns).Get(resName, metav1.GetOptions{})
+			obj, _ := client.Resource(gvr).Namespace(ns).Get(context.Background(), resName, metav1.GetOptions{})
 			if obj == nil {
 				log.Warnf("Resource predicate not passed, object not found...")
 				return false
@@ -113,7 +114,7 @@ func checkPredicateOk(clientset *kubernetes.Clientset,
 			if ps.Labels != "" {
 				options = getListOptions(ps.Labels)
 			}
-			objList, _ := client.Resource(gvr).Namespace(ns).List(options)
+			objList, _ := client.Resource(gvr).Namespace(ns).List(context.Background(), options)
 			if objList == nil || len(objList.Items) == 0 {
 				log.Warnf("Resource predicate not passed, no resources found for the given kind and namespace...")
 				return false

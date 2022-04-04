@@ -39,6 +39,7 @@ import (
 
 const (
 	podNamespace string = "kbench-pod-namespace"
+	vmNamespace string = "kbench-vm-namespace"
 	depNamespace string = "kbench-deployment-namespace"
 	ssNamespace  string = "kbench-statefulset-namespace"
 	svcNamespace string = "kbench-service-namespace"
@@ -48,6 +49,7 @@ const (
 
 const (
 	podType string = "kbench-pod"
+	vmType string = "kbench-vm"
 	depType string = "kbench-deployment-pod"
 	ssType  string = "kbench-statefulset-pod"
 	rcType  string = "kbench-rc-pod"
@@ -71,6 +73,7 @@ var mgrs map[string]manager.Manager
 
 func Run(kubeConfig *restclient.Config,
 	testConfig TestConfig, outputDir *string) error {
+	log.Info("tesdriver Run called .........")
 
 	outDir = outputDir
 	wcpOps := testConfig.Operations
@@ -217,6 +220,7 @@ func Run(kubeConfig *restclient.Config,
 			opIdx += startIdx
 
 			// Check and run if valid pod config is found
+			log.Info("tesdriver checkAndRunPod calling.........")
 			lastPodAction := checkAndRunPod(kubeConfig, op, opIdx, maxClients)
 
 			// Check and run if valid deployment config is found

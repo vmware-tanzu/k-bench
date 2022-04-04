@@ -45,6 +45,7 @@ const (
 // Supported k8s resource kinds
 const (
 	POD                     string = "Pod"
+	//VIRTUALMACHINE          string = "Vm"
 	DEPLOYMENT              string = "Deployment"
 	STATEFUL_SET            string = "StatefulSet"
 	REPLICATION_CONTROLLER  string = "ReplicationController"
@@ -109,6 +110,7 @@ type NewManagerFunc func() Manager
 
 var Managers = map[string]NewManagerFunc{
 	"Pod":                   NewPodManager,
+	//"Vm":					 NewVmManager,
 	"Deployment":            NewDeploymentManager,
 	"StatefulSet":           NewStatefulSetManager,
 	"Namespace":             NewNamespaceManager,

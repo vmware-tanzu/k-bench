@@ -27,6 +27,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"context"
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -240,13 +241,13 @@ func (mgr *PodManager) initCache(resourceType string) {
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				options.LabelSelector = labels.SelectorFromSet(
 					labels.Set{"app": AppName, "type": resourceType}).String()
-				obj, err := mgr.client.CoreV1().Pods("").List(options)
+				obj, err := mgr.client.CoreV1().Pods("").List(context.Background(), options)
 				return runtime.Object(obj), err
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				options.LabelSelector = labels.SelectorFromSet(
 					labels.Set{"app": AppName, "type": resourceType}).String()
-				return mgr.client.CoreV1().Pods("").Watch(options)
+				return mgr.client.CoreV1().Pods("").Watch(context.Background(), options)
 			},
 		},
 		&apiv1.Pod{},
@@ -289,7 +290,7 @@ func (mgr *PodManager) UpdateBeforeDeletion(name string, ns string) {
 		}.AsSelector().String()
 		options := metav1.ListOptions{FieldSelector: selector}
 		//TODO: move the below statement out side the lock?
-		events, err := mgr.client.CoreV1().Events("").List(options)
+		events, err := mgr.client.CoreV1().Events("").List(context.Background(), options)
 		if err != nil {
 			log.Error(err)
 		} else {
@@ -352,7 +353,7 @@ func (mgr *PodManager) Init(
 
 	if createNamespace {
 		nsSpec := &apiv1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: nsName}}
-		_, err := mgr.client.CoreV1().Namespaces().Create(nsSpec)
+		_, err := mgr.client.CoreV1().Namespaces().Create(context.Background(), nsSpec, metav1.CreateOptions{})
 		if err != nil {
 			log.Warningf("Fail to create namespace %s, %v", nsName, err)
 		} else {
@@ -368,6 +369,7 @@ func (mgr *PodManager) Init(
  * This function implements the CREATE action.
  */
 func (mgr *PodManager) Create(spec interface{}) error {
+	log.Info("Create Pod called in Pod Manager.........", spec)
 
 	switch s := spec.(type) {
 	default:
@@ -383,7 +385,7 @@ func (mgr *PodManager) Create(spec interface{}) error {
 			mgr.podMutex.Lock()
 			if _, exist := mgr.nsSet[ns]; !exist && ns != apiv1.NamespaceDefault {
 				nsSpec := &apiv1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}
-				_, err := mgr.client.CoreV1().Namespaces().Create(nsSpec)
+				_, err := mgr.client.CoreV1().Namespaces().Create(context.Background(), nsSpec, metav1.CreateOptions{})
 				if err != nil {
 					if strings.Contains(err.Error(), "already exists") {
 						mgr.nsSet[ns] = true
@@ -398,7 +400,7 @@ func (mgr *PodManager) Create(spec interface{}) error {
 		}
 
 		startTime := metav1.Now()
-		pod, err := mgr.clientsets[cid].CoreV1().Pods(ns).Create(s)
+		pod, err := mgr.clientsets[cid].CoreV1().Pods(ns).Create(context.Background(), s, metav1.CreateOptions{})
 
 		latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
@@ -421,7 +423,7 @@ func (mgr *PodManager) Create(spec interface{}) error {
  * This function implements the LIST action.
  */
 func (mgr *PodManager) List(n interface{}) error {
-
+	log.Info("List Pod called in Pod Manager.........", n)
 	switch s := n.(type) {
 	default:
 		log.Errorf("Invalid spec type %T for Pod list action.", s)
@@ -435,9 +437,9 @@ func (mgr *PodManager) List(n interface{}) error {
 		if s.Namespace != "" {
 			ns = s.Namespace
 		}
-
+		log.Info("Options in List Pod Manager.........", options)
 		startTime := metav1.Now()
-		pods, err := mgr.clientsets[cid].CoreV1().Pods(ns).List(options)
+		pods, err := mgr.clientsets[cid].CoreV1().Pods(ns).List(context.Background(), options)
 		latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
 		if err != nil {
@@ -470,7 +472,7 @@ func (mgr *PodManager) Get(n interface{}) error {
 		// Labels (or other filters) are ignored as they do not make sense to GET
 		startTime := metav1.Now()
 		pod, err := mgr.clientsets[cid].CoreV1().Pods(ns).Get(
-			s.Name, metav1.GetOptions{})
+			context.Background(), s.Name, metav1.GetOptions{})
 		latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
 		if err != nil {
@@ -508,7 +510,7 @@ func (mgr *PodManager) Run(n interface{}) error {
 
 		pods := make([]apiv1.Pod, 0)
 
-		podList, err := mgr.clientsets[cid].CoreV1().Pods(ns).List(options)
+		podList, err := mgr.clientsets[cid].CoreV1().Pods(ns).List(context.Background(), options)
 		if err != nil {
 			return err
 		}
@@ -587,7 +589,7 @@ func (mgr *PodManager) Copy(n interface{}) error {
 
 		pods := make([]apiv1.Pod, 0)
 
-		podList, err := mgr.clientsets[cid].CoreV1().Pods(ns).List(options)
+		podList, err := mgr.clientsets[cid].CoreV1().Pods(ns).List(context.Background(), options)
 		if err != nil {
 			return err
 		}
@@ -644,7 +646,7 @@ func (mgr *PodManager) Update(n interface{}) error {
 
 		pods := make([]apiv1.Pod, 0)
 
-		podList, err := mgr.clientsets[cid].CoreV1().Pods(ns).List(options)
+		podList, err := mgr.clientsets[cid].CoreV1().Pods(ns).List(context.Background(), options)
 		if err != nil {
 			return err
 		}
@@ -657,7 +659,7 @@ func (mgr *PodManager) Update(n interface{}) error {
 
 			startTime := metav1.Now()
 			pod, err := mgr.clientsets[cid].CoreV1().Pods(ns).Update(
-				&currPod)
+				context.Background(), &currPod, metav1.UpdateOptions{})
 			latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
 			if err != nil {
@@ -697,7 +699,7 @@ func (mgr *PodManager) Delete(n interface{}) error {
 
 		pods := make([]apiv1.Pod, 0)
 
-		podList, err := mgr.clientsets[cid].CoreV1().Pods(ns).List(options)
+		podList, err := mgr.clientsets[cid].CoreV1().Pods(ns).List(context.Background(), options)
 		if err != nil {
 			return err
 		}
@@ -711,7 +713,7 @@ func (mgr *PodManager) Delete(n interface{}) error {
 
 			// Delete the pod
 			startTime := metav1.Now()
-			mgr.clientsets[cid].CoreV1().Pods(ns).Delete(currPod.Name, nil)
+			mgr.clientsets[cid].CoreV1().Pods(ns).Delete(context.Background(), currPod.Name, metav1.DeleteOptions{})
 			latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
 			mgr.alMutex.Lock()
@@ -750,13 +752,13 @@ func (mgr *PodManager) DeleteAll() error {
 	}
 
 	if mgr.namespace != apiv1.NamespaceDefault {
-		mgr.client.CoreV1().Namespaces().Delete(mgr.namespace, nil)
+		mgr.client.CoreV1().Namespaces().Delete(context.Background(), mgr.namespace, metav1.DeleteOptions{})
 	}
 
 	// Delete other non default namespaces
 	for ns, _ := range mgr.nsSet {
 		if ns != apiv1.NamespaceDefault {
-			mgr.client.CoreV1().Namespaces().Delete(ns, nil)
+			mgr.client.CoreV1().Namespaces().Delete(context.Background(), ns, metav1.DeleteOptions{})
 		}
 	}
 	mgr.nsSet = make(map[string]bool, 0)
