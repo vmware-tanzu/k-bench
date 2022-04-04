@@ -18,6 +18,7 @@ package util
 
 import (
 	log "github.com/sirupsen/logrus"
+	"context"
 	"io/ioutil"
 	"k-bench/manager"
 	appsv1 "k8s.io/api/apps/v1"
@@ -33,7 +34,39 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
+	ctrlClient "sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+func checkAndRunVM(
+	kubeConfig *restclient.Config,
+	op WcpOp,
+	opIdx int,
+	maxClients map[string]int) string {
+	if len(op.VirtualMachine.Actions) > 0 {
+		var vmMgr *manager.VmManager
+
+		if mgr, ok := mgrs[manager.VIRTUALMACHINE]; ok {
+			vmMgr = mgr.(*manager.VmManager)
+		} else {
+			mgrs[manager.VIRTUALMACHINE], _ = manager.GetManager(manager.VIRTUALMACHINE)
+			vmMgr = mgrs[manager.VIRTUALMACHINE].(*manager.VmManager)
+			vmMgr.Init(kubeConfig, vmNamespace, true,
+				maxClients[manager.VIRTUALMACHINE], vmType)
+		}
+
+		log.Infof("Performing VM actions in operation %v", opIdx)
+
+		for i := 0; i < op.VirtualMachine.Count; i++ {
+			go runVmActions(vmMgr, op.VirtualMachine, opIdx, i)
+			wg.Add(1)
+		}
+
+		return op.VirtualMachine.Actions[len(op.VirtualMachine.Actions)-1].Act
+	}
+	return ""
+}
+
 
 func checkAndRunPod(
 	kubeConfig *restclient.Config,
@@ -395,7 +428,6 @@ func runPodActions(
 					spec.Labels[lk] = lv
 				}
 			}
-
 			ae := mgr.ActionFuncs[manager.CREATE_ACTION](mgr, spec)
 			if ae != nil {
 				log.Error(ae)
@@ -451,6 +483,115 @@ func runPodActions(
 	}
 
 	wg.Done()
+}
+
+func runVmActions(
+	mgr *manager.VmManager,
+	vmConfig VmConfig,
+	opNum int,
+	tid int) {
+
+	// Get default vm name (used when filtering not specified or applicable)
+	vmName := mgr.GetResourceName(vmConfig.VmNamePrefix, opNum, tid)
+
+	actions := vmConfig.Actions
+
+	created := false
+
+	sleepTimes := vmConfig.SleepTimes
+
+	si := 0
+
+	for _, action := range actions {
+		var lk, lv string
+		ns := vmNamespace
+
+		if vmConfig.Namespace != "" {
+			ns = vmConfig.Namespace
+		}
+		actStr := strings.ToLower(action.Act)
+
+		if actStr == manager.CREATE_ACTION {
+			if created {
+				log.Warningf("Only one CREATE may be executed in an operation, skipped.")
+				continue
+			} else {
+				created = true
+			}
+
+			var spec *v1alpha1.VirtualMachine
+			createSpec := action.Spec
+			updateLabelNs(createSpec, vmConfig.LabelKey, vmConfig.LabelValue, &ns, &lk, &lv)
+
+			// obj, derr := decodeYaml(createSpec.YamlSpec)
+			// if obj != nil && derr == nil {
+			// 	spec = obj.(*v1alpha1.VirtualMachineSpec)
+			// 	if spec.Kind != "VirtualMachine" {
+			// 		log.Warningf("Invalid kind specified in yaml for pod creation: %v",
+			// 			spec.Kind)
+			// 		spec = nil
+			// 	}
+			// }
+
+			if spec == nil {
+				as := manager.ActionSpec{vmName, tid, opNum, ns,
+					lk, lv, true, "", manager.VIRTUALMACHINE}			
+				spec = genVmSpec(createSpec.ClassName, createSpec.ImageName, createSpec.StorageClass, createSpec.PowerState,
+						opNum, as)
+			} else {
+				//Name from yaml file are not respected to ensure integrity.
+				spec.Name = vmName
+
+				if spec.Namespace == "" {
+					spec.Namespace = ns
+				} else {
+					ns = spec.Namespace
+				}
+				v := reflect.ValueOf(spec.Spec)
+				for i := 0; i < v.NumField(); i++ {
+					spec.Spec.ClassName = spec.Spec.ClassName
+					spec.Spec.ImageName = spec.Spec.ImageName
+					spec.Spec.StorageClass = spec.Spec.StorageClass
+					spec.Spec.PowerState = spec.Spec.PowerState
+				}
+
+				if spec.Labels == nil {
+					spec.Labels = make(map[string]string, 0)
+				}
+
+				updateLabels(spec.Labels, vmType, opNum, tid)
+
+				if lk != "" && lv != "" {
+					spec.Labels[lk] = lv
+				}
+			}
+			ae := mgr.ActionFuncs[manager.CREATE_ACTION](mgr, spec)
+			if ae != nil {
+				log.Error(ae)
+			}
+		} else if actionFunc, ok := mgr.ActionFuncs[actStr]; ok {
+			lusdSpec := action.Spec
+			updateLabelNs(lusdSpec, vmConfig.LabelKey, vmConfig.LabelValue, &ns, &lk, &lv)
+
+			as := manager.ActionSpec{
+					vmName, tid, opNum, ns, lk, lv,
+					lusdSpec.MatchGoroutine, lusdSpec.MatchOperation, manager.VIRTUALMACHINE}
+			ae := actionFunc(mgr, as)
+
+			if ae != nil {
+				log.Error(ae)
+			}
+		}
+
+		// TODO: add optional status checking logic here
+		if si < len(sleepTimes) {
+			log.Infof("Sleep %v mili-seconds after %v action", sleepTimes[si], action.Act)
+			time.Sleep(time.Duration(sleepTimes[si]) * time.Millisecond)
+			si++
+		}
+	}
+
+	//wg.Done()
 }
 
 // A function that runs a set of Deployment actions
@@ -1127,7 +1268,47 @@ func runResourceActions(
 
 	wg.Done()
 }
+func waitforVmRelatedOps(
+	driverVmClient ctrlClient.Client,
+	resKind string,
+	timeout int,
+	totalWait int,
+	interval int,
+	opIdx int) {
+	vmList := v1alpha1.VirtualMachineList{}
+	for totalWait < timeout {
+		err := driverVmClient.List(context.Background(), &vmList)
+		if err != nil {
+			panic(err)
+		}
+		if len(vmList.Items) > 0 {
+			log.Infof("Not all %v have been deleted, "+
+				"%v remaining, wait for %v mili-seconds...",
+				resKind, len(vmList.Items), interval)
+			time.Sleep(time.Duration(interval) * time.Millisecond)
+			totalWait += interval
+		} else {
+			break
+		}
+	}
+	if totalWait >= timeout {
+		err := driverVmClient.List(context.Background(), &vmList)
+		if err != nil {
+			panic(err)
+		}
+		// gp := int64(0)
+		// fg := metav1.DeletePropagationForeground
+		if len(vmList.Items) > 0 {
+			log.Infof("Timed out waiting for %v deletion, "+
+				"%v remaining, force delete...",
+				resKind, len(vmList.Items))
+			// driverVmClient.CoreV1().Pods(pods.Items[0].Namespace).DeleteCollection(context.Background(), &metav1.DeleteOptions{
+			// 	GracePeriodSeconds: &gp, PropagationPolicy: &fg}, options)
+		}
+	}
 
+
+}
 // A helper function to update labels and namespace
 func waitForPodRelatedOps(
 	mgrs map[string]manager.Manager,
@@ -1136,7 +1317,8 @@ func waitForPodRelatedOps(
 	lastAction string,
 	timeout int,
 	interval int,
-	opIdx int) int {
+	opIdx int,
+	kubeConfig *restclient.Config) int {
 
 	totalWait := 0
 	var t string
@@ -1148,38 +1330,53 @@ func waitForPodRelatedOps(
 		t = rcType
 	} else if resKind == manager.STATEFUL_SET {
 		t = ssType
+	} else if resKind == manager.VIRTUALMACHINE {
+		t = vmType
 	}
 	// Wait for pod action (deletion or creation)
 	if strings.ToLower(lastAction) == manager.DELETE_ACTION {
-		// Wait for pod deletion
-		selector := labels.Set{
-			"opnum": strconv.Itoa(opIdx),
-			"type":  t,
-		}.AsSelector().String()
-		options := metav1.ListOptions{LabelSelector: selector}
-		for totalWait < timeout {
-			pods, _ := driverClient.CoreV1().Pods("").List(options)
+		if resKind == manager.VIRTUALMACHINE {
+			scheme := runtime.NewScheme()
+			_ = v1alpha1.AddToScheme(scheme)
 
-			if len(pods.Items) > 0 {
-				log.Infof("Not all %v have been deleted, "+
-					"%v remaining, wait for %v mili-seconds...",
-					resKind, len(pods.Items), interval)
-				time.Sleep(time.Duration(interval) * time.Millisecond)
-				totalWait += interval
-			} else {
-				break
+			driverVmClient, err := ctrlClient.New(kubeConfig, ctrlClient.Options{
+				Scheme: scheme,
+			})
+			if err != nil {
+				panic(err)
 			}
-		}
-		if totalWait >= timeout {
-			pods, _ := driverClient.CoreV1().Pods("").List(options)
-			gp := int64(0)
-			fg := metav1.DeletePropagationForeground
-			if len(pods.Items) > 0 {
-				log.Infof("Timed out waiting for %v deletion, "+
-					"%v remaining, force delete...",
-					resKind, len(pods.Items))
-				driverClient.CoreV1().Pods(pods.Items[0].Namespace).DeleteCollection(&metav1.DeleteOptions{
-					GracePeriodSeconds: &gp, PropagationPolicy: &fg}, options)
+			waitforVmRelatedOps(driverVmClient, resKind, timeout, totalWait, interval, opIdx)
+		} else {
+		// Wait for pod deletion
+			selector := labels.Set{
+				"opnum": strconv.Itoa(opIdx),
+				"type":  t,
+			}.AsSelector().String()
+			options := metav1.ListOptions{LabelSelector: selector}
+			for totalWait < timeout {
+				pods, _ := driverClient.CoreV1().Pods("").List(context.Background(), options)
+
+				if len(pods.Items) > 0 {
+					log.Infof("Not all %v have been deleted, "+
+						"%v remaining, wait for %v mili-seconds...",
+						resKind, len(pods.Items), interval)
+					time.Sleep(time.Duration(interval) * time.Millisecond)
+					totalWait += interval
+				} else {
+					break
+				}
+			}
+			if totalWait >= timeout {
+				pods, _ := driverClient.CoreV1().Pods("").List(context.Background(), options)
+				// gp := int64(0)
+				// fg := metav1.DeletePropagationForeground
+				if len(pods.Items) > 0 {
+					log.Infof("Timed out waiting for %v deletion, "+
+						"%v remaining, force delete...",
+						resKind, len(pods.Items))
+					// driverClient.CoreV1().Pods(pods.Items[0].Namespace).DeleteCollection(context.Background(), &metav1.DeleteOptions{
+					// 	GracePeriodSeconds: &gp, PropagationPolicy: &fg}, options)
+				}
 			}
 		}
 	} else if mgr, ok := mgrs[resKind]; ok {
@@ -1200,6 +1397,9 @@ func waitForPodRelatedOps(
 				} else if resKind == manager.REPLICATION_CONTROLLER {
 					rcMgr := mgr.(*manager.ReplicationControllerManager)
 					stable = rcMgr.IsStable()
+				} else if resKind == manager.VIRTUALMACHINE {
+					vmMgr := mgr.(*manager.VmManager)
+					stable = vmMgr.IsStable()
 				}
 				if !stable {
 					log.Infof("Not all %v are running, wait for %v mili-seconds...",

@@ -18,6 +18,7 @@ package manager
 
 import (
 	"fmt"
+	"context"
 	v1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/client-go/dynamic"
@@ -146,7 +147,7 @@ func (mgr *ResourceManager) Init(
 
 	if createNamespace {
 		nsSpec := &apiv1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: nsName}}
-		_, ne := mgr.client.CoreV1().Namespaces().Create(nsSpec)
+		_, ne := mgr.client.CoreV1().Namespaces().Create(context.Background(), nsSpec, metav1.CreateOptions{})
 		if ne != nil {
 			log.Warningf("Fail to create namespace %s, %v", nsName, ne)
 		}
@@ -175,7 +176,7 @@ func (mgr *ResourceManager) Create(spec interface{}) error {
 		mgr.resMutex.Lock()
 		if _, exist := mgr.nsSet[ns]; !exist && ns != apiv1.NamespaceDefault {
 			nsSpec := &apiv1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}
-			_, err := mgr.client.CoreV1().Namespaces().Create(nsSpec)
+			_, err := mgr.client.CoreV1().Namespaces().Create(context.Background(), nsSpec, metav1.CreateOptions{})
 			mgr.nsSet[ns] = true
 			if err != nil {
 				if strings.Contains(err.Error(), "already exists") {
@@ -204,62 +205,62 @@ func (mgr *ResourceManager) Create(spec interface{}) error {
 		log.Errorf("Invalid spec type %T for resource create action.", obj)
 		return fmt.Errorf("Invalid spec type %T for resource create action.", obj)
 	case *apiv1.Pod:
-		_, err = mgr.clientsets[cid].CoreV1().Pods(ns).Create(obj)
+		_, err = mgr.clientsets[cid].CoreV1().Pods(ns).Create(context.Background(), obj, metav1.CreateOptions{})
 		kind = POD
 
 	case *apiv1.Namespace:
-		_, err = mgr.clientsets[cid].CoreV1().Namespaces().Create(obj)
+		_, err = mgr.clientsets[cid].CoreV1().Namespaces().Create(context.Background(), obj, metav1.CreateOptions{})
 		kind = NAMESPACE
 	case *apiv1.Service:
-		_, err = mgr.clientsets[cid].CoreV1().Services(ns).Create(obj)
+		_, err = mgr.clientsets[cid].CoreV1().Services(ns).Create(context.Background(), obj, metav1.CreateOptions{})
 		kind = SERVICE
 	case *apiv1.ConfigMap:
-		_, err = mgr.clientsets[cid].CoreV1().ConfigMaps(ns).Create(obj)
+		_, err = mgr.clientsets[cid].CoreV1().ConfigMaps(ns).Create(context.Background(), obj, metav1.CreateOptions{})
 		kind = CONFIG_MAP
 	case *apiv1.Endpoints:
-		_, err = mgr.clientsets[cid].CoreV1().Endpoints(ns).Create(obj)
+		_, err = mgr.clientsets[cid].CoreV1().Endpoints(ns).Create(context.Background(), obj, metav1.CreateOptions{})
 		kind = ENDPOINTS
 	case *apiv1.Event:
-		_, err = mgr.clientsets[cid].CoreV1().Events(ns).Create(obj)
+		_, err = mgr.clientsets[cid].CoreV1().Events(ns).Create(context.Background(), obj, metav1.CreateOptions{})
 		kind = EVENT
 	case *apiv1.ComponentStatus:
 		log.Errorf("Create action is not supported for %s.", COMPONENT_STATUS)
 		return fmt.Errorf("create action not supported on the resource")
 	case *apiv1.Node:
-		_, err = mgr.clientsets[cid].CoreV1().Nodes().Create(obj)
+		_, err = mgr.clientsets[cid].CoreV1().Nodes().Create(context.Background(), obj, metav1.CreateOptions{})
 		kind = NODE
 	case *apiv1.LimitRange:
-		_, err = mgr.clientsets[cid].CoreV1().LimitRanges(ns).Create(obj)
+		_, err = mgr.clientsets[cid].CoreV1().LimitRanges(ns).Create(context.Background(), obj, metav1.CreateOptions{})
 		kind = LIMIT_RANGE
 	case *apiv1.PersistentVolumeClaim:
-		_, err = mgr.clientsets[cid].CoreV1().PersistentVolumeClaims(ns).Create(obj)
+		_, err = mgr.clientsets[cid].CoreV1().PersistentVolumeClaims(ns).Create(context.Background(), obj, metav1.CreateOptions{})
 		kind = PERSISTENT_VOLUME_CLAIM
 	case *apiv1.PersistentVolume:
-		_, err = mgr.clientsets[cid].CoreV1().PersistentVolumes().Create(obj)
+		_, err = mgr.clientsets[cid].CoreV1().PersistentVolumes().Create(context.Background(), obj, metav1.CreateOptions{})
 		kind = PERSISTENT_VOLUME
 	case *apiv1.PodTemplate:
-		_, err = mgr.clientsets[cid].CoreV1().PodTemplates(ns).Create(obj)
+		_, err = mgr.clientsets[cid].CoreV1().PodTemplates(ns).Create(context.Background(), obj, metav1.CreateOptions{})
 		kind = POD_TEMPLATE
 	case *apiv1.ResourceQuota:
-		_, err = mgr.clientsets[cid].CoreV1().ResourceQuotas(ns).Create(obj)
+		_, err = mgr.clientsets[cid].CoreV1().ResourceQuotas(ns).Create(context.Background(), obj, metav1.CreateOptions{})
 		kind = RESOURCE_QUOTA
 	case *apiv1.Secret:
-		_, err = mgr.clientsets[cid].CoreV1().Secrets(ns).Create(obj)
+		_, err = mgr.clientsets[cid].CoreV1().Secrets(ns).Create(context.Background(), obj, metav1.CreateOptions{})
 		kind = SECRET
 	case *apiv1.ServiceAccount:
-		_, err = mgr.clientsets[cid].CoreV1().ServiceAccounts(ns).Create(obj)
+		_, err = mgr.clientsets[cid].CoreV1().ServiceAccounts(ns).Create(context.Background(), obj, metav1.CreateOptions{})
 		kind = SERVICE_ACCOUNT
 	case *v1.Role:
-		_, err = mgr.clientsets[cid].RbacV1().Roles(ns).Create(obj)
+		_, err = mgr.clientsets[cid].RbacV1().Roles(ns).Create(context.Background(), obj, metav1.CreateOptions{})
 		kind = ROLE
 	case *v1.RoleBinding:
-		_, err = mgr.clientsets[cid].RbacV1().RoleBindings(ns).Create(obj)
+		_, err = mgr.clientsets[cid].RbacV1().RoleBindings(ns).Create(context.Background(), obj, metav1.CreateOptions{})
 		kind = ROLE_BINDING
 	case *v1.ClusterRole:
-		_, err = mgr.clientsets[cid].RbacV1().ClusterRoles().Create(obj)
+		_, err = mgr.clientsets[cid].RbacV1().ClusterRoles().Create(context.Background(), obj, metav1.CreateOptions{})
 		kind = CLUSTER_ROLE
 	case *v1.ClusterRoleBinding:
-		_, err = mgr.clientsets[cid].RbacV1().ClusterRoleBindings().Create(obj)
+		_, err = mgr.clientsets[cid].RbacV1().ClusterRoleBindings().Create(context.Background(), obj, metav1.CreateOptions{})
 		kind = CLUSTER_ROLE_BINDING
 	}
 
@@ -314,75 +315,75 @@ func (mgr *ResourceManager) List(n interface{}) error {
 		default:
 			log.Errorf("Invalid kind %T for resource delete action.", kind)
 		case POD:
-			resList, _ := mgr.clientsets[cid].CoreV1().Pods(ns).List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().Pods(ns).List(context.Background(), options)
 			l = len(resList.Items)
 			kind = POD
 		case SERVICE:
-			resList, _ := mgr.clientsets[cid].CoreV1().Services(ns).List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().Services(ns).List(context.Background(), options)
 			l = len(resList.Items)
 			kind = SERVICE
 		case CONFIG_MAP:
-			resList, _ := mgr.clientsets[cid].CoreV1().ConfigMaps(ns).List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().ConfigMaps(ns).List(context.Background(), options)
 			l = len(resList.Items)
 			kind = CONFIG_MAP
 		case ENDPOINTS:
-			resList, _ := mgr.clientsets[cid].CoreV1().Endpoints(ns).List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().Endpoints(ns).List(context.Background(), options)
 			l = len(resList.Items)
 			kind = ENDPOINTS
 		case EVENT:
-			resList, _ := mgr.clientsets[cid].CoreV1().Events(ns).List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().Events(ns).List(context.Background(), options)
 			l = len(resList.Items)
 			kind = EVENT
 		case COMPONENT_STATUS:
-			resList, _ := mgr.clientsets[cid].CoreV1().ComponentStatuses().List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().ComponentStatuses().List(context.Background(), options)
 			l = len(resList.Items)
 			kind = COMPONENT_STATUS
 		case NODE:
-			resList, _ := mgr.clientsets[cid].CoreV1().Nodes().List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().Nodes().List(context.Background(), options)
 			l = len(resList.Items)
 			kind = NODE
 		case LIMIT_RANGE:
-			resList, _ := mgr.clientsets[cid].CoreV1().LimitRanges(ns).List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().LimitRanges(ns).List(context.Background(), options)
 			l = len(resList.Items)
 			kind = LIMIT_RANGE
 		case PERSISTENT_VOLUME_CLAIM:
-			resList, _ := mgr.clientsets[cid].CoreV1().PersistentVolumeClaims(ns).List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().PersistentVolumeClaims(ns).List(context.Background(), options)
 			l = len(resList.Items)
 			kind = PERSISTENT_VOLUME_CLAIM
 		case PERSISTENT_VOLUME:
-			resList, _ := mgr.clientsets[cid].CoreV1().PersistentVolumes().List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().PersistentVolumes().List(context.Background(), options)
 			l = len(resList.Items)
 			kind = PERSISTENT_VOLUME
 		case POD_TEMPLATE:
-			resList, _ := mgr.clientsets[cid].CoreV1().PodTemplates(ns).List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().PodTemplates(ns).List(context.Background(), options)
 			l = len(resList.Items)
 			kind = POD_TEMPLATE
 		case RESOURCE_QUOTA:
-			resList, _ := mgr.clientsets[cid].CoreV1().ResourceQuotas(ns).List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().ResourceQuotas(ns).List(context.Background(), options)
 			l = len(resList.Items)
 			kind = RESOURCE_QUOTA
 		case SECRET:
-			resList, _ := mgr.clientsets[cid].CoreV1().Secrets(ns).List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().Secrets(ns).List(context.Background(), options)
 			l = len(resList.Items)
 			kind = SECRET
 		case SERVICE_ACCOUNT:
-			resList, _ := mgr.clientsets[cid].CoreV1().ServiceAccounts(ns).List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().ServiceAccounts(ns).List(context.Background(), options)
 			l = len(resList.Items)
 			kind = SERVICE_ACCOUNT
 		case ROLE:
-			resList, _ := mgr.clientsets[cid].RbacV1().Roles(ns).List(options)
+			resList, _ := mgr.clientsets[cid].RbacV1().Roles(ns).List(context.Background(), options)
 			l = len(resList.Items)
 			kind = ROLE
 		case ROLE_BINDING:
-			resList, _ := mgr.clientsets[cid].RbacV1().RoleBindings(ns).List(options)
+			resList, _ := mgr.clientsets[cid].RbacV1().RoleBindings(ns).List(context.Background(), options)
 			l = len(resList.Items)
 			kind = ROLE_BINDING
 		case CLUSTER_ROLE:
-			resList, _ := mgr.clientsets[cid].RbacV1().ClusterRoles().List(options)
+			resList, _ := mgr.clientsets[cid].RbacV1().ClusterRoles().List(context.Background(), options)
 			l = len(resList.Items)
 			kind = CLUSTER_ROLE
 		case CLUSTER_ROLE_BINDING:
-			resList, _ := mgr.clientsets[cid].RbacV1().ClusterRoleBindings().List(options)
+			resList, _ := mgr.clientsets[cid].RbacV1().ClusterRoleBindings().List(context.Background(), options)
 			l = len(resList.Items)
 			kind = CLUSTER_ROLE_BINDING
 		}
@@ -431,58 +432,58 @@ func (mgr *ResourceManager) Get(n interface{}) error {
 		default:
 			log.Errorf("Invalid kind %T for resource delete action.", kind)
 		case POD:
-			mgr.clientsets[cid].CoreV1().Pods(ns).Get(s.Name, metav1.GetOptions{})
+			mgr.clientsets[cid].CoreV1().Pods(ns).Get(context.Background(), s.Name, metav1.GetOptions{})
 			kind = POD
 		case SERVICE:
-			mgr.clientsets[cid].CoreV1().Services(ns).Get(s.Name, metav1.GetOptions{})
+			mgr.clientsets[cid].CoreV1().Services(ns).Get(context.Background(), s.Name, metav1.GetOptions{})
 			kind = SERVICE
 		case CONFIG_MAP:
-			mgr.clientsets[cid].CoreV1().ConfigMaps(ns).Get(s.Name, metav1.GetOptions{})
+			mgr.clientsets[cid].CoreV1().ConfigMaps(ns).Get(context.Background(), s.Name, metav1.GetOptions{})
 			kind = CONFIG_MAP
 		case ENDPOINTS:
-			mgr.clientsets[cid].CoreV1().Endpoints(ns).Get(s.Name, metav1.GetOptions{})
+			mgr.clientsets[cid].CoreV1().Endpoints(ns).Get(context.Background(), s.Name, metav1.GetOptions{})
 			kind = ENDPOINTS
 		case EVENT:
-			mgr.clientsets[cid].CoreV1().Events(ns).Get(s.Name, metav1.GetOptions{})
+			mgr.clientsets[cid].CoreV1().Events(ns).Get(context.Background(), s.Name, metav1.GetOptions{})
 			kind = EVENT
 		case COMPONENT_STATUS:
-			mgr.clientsets[cid].CoreV1().ComponentStatuses().Get(s.Name, metav1.GetOptions{})
+			mgr.clientsets[cid].CoreV1().ComponentStatuses().Get(context.Background(), s.Name, metav1.GetOptions{})
 			kind = COMPONENT_STATUS
 		case NODE:
-			mgr.clientsets[cid].CoreV1().Nodes().Get(s.Name, metav1.GetOptions{})
+			mgr.clientsets[cid].CoreV1().Nodes().Get(context.Background(), s.Name, metav1.GetOptions{})
 			kind = NODE
 		case LIMIT_RANGE:
-			mgr.clientsets[cid].CoreV1().LimitRanges(ns).Get(s.Name, metav1.GetOptions{})
+			mgr.clientsets[cid].CoreV1().LimitRanges(ns).Get(context.Background(), s.Name, metav1.GetOptions{})
 			kind = LIMIT_RANGE
 		case PERSISTENT_VOLUME_CLAIM:
-			mgr.clientsets[cid].CoreV1().PersistentVolumeClaims(ns).Get(s.Name, metav1.GetOptions{})
+			mgr.clientsets[cid].CoreV1().PersistentVolumeClaims(ns).Get(context.Background(), s.Name, metav1.GetOptions{})
 			kind = PERSISTENT_VOLUME_CLAIM
 		case PERSISTENT_VOLUME:
-			mgr.clientsets[cid].CoreV1().PersistentVolumes().Get(s.Name, metav1.GetOptions{})
+			mgr.clientsets[cid].CoreV1().PersistentVolumes().Get(context.Background(), s.Name, metav1.GetOptions{})
 			kind = PERSISTENT_VOLUME
 		case POD_TEMPLATE:
-			mgr.clientsets[cid].CoreV1().PodTemplates(ns).Get(s.Name, metav1.GetOptions{})
+			mgr.clientsets[cid].CoreV1().PodTemplates(ns).Get(context.Background(), s.Name, metav1.GetOptions{})
 			kind = POD_TEMPLATE
 		case RESOURCE_QUOTA:
-			mgr.clientsets[cid].CoreV1().ResourceQuotas(ns).Get(s.Name, metav1.GetOptions{})
+			mgr.clientsets[cid].CoreV1().ResourceQuotas(ns).Get(context.Background(), s.Name, metav1.GetOptions{})
 			kind = RESOURCE_QUOTA
 		case SECRET:
-			mgr.clientsets[cid].CoreV1().Secrets(ns).Get(s.Name, metav1.GetOptions{})
+			mgr.clientsets[cid].CoreV1().Secrets(ns).Get(context.Background(), s.Name, metav1.GetOptions{})
 			kind = SECRET
 		case SERVICE_ACCOUNT:
-			mgr.clientsets[cid].CoreV1().ServiceAccounts(ns).Get(s.Name, metav1.GetOptions{})
+			mgr.clientsets[cid].CoreV1().ServiceAccounts(ns).Get(context.Background(), s.Name, metav1.GetOptions{})
 			kind = SERVICE_ACCOUNT
 		case ROLE:
-			mgr.clientsets[cid].RbacV1().Roles(ns).Get(s.Name, metav1.GetOptions{})
+			mgr.clientsets[cid].RbacV1().Roles(ns).Get(context.Background(), s.Name, metav1.GetOptions{})
 			kind = ROLE
 		case ROLE_BINDING:
-			mgr.clientsets[cid].RbacV1().RoleBindings(ns).Get(s.Name, metav1.GetOptions{})
+			mgr.clientsets[cid].RbacV1().RoleBindings(ns).Get(context.Background(), s.Name, metav1.GetOptions{})
 			kind = ROLE_BINDING
 		case CLUSTER_ROLE:
-			mgr.clientsets[cid].RbacV1().ClusterRoles().Get(s.Name, metav1.GetOptions{})
+			mgr.clientsets[cid].RbacV1().ClusterRoles().Get(context.Background(), s.Name, metav1.GetOptions{})
 			kind = CLUSTER_ROLE
 		case CLUSTER_ROLE_BINDING:
-			mgr.clientsets[cid].RbacV1().ClusterRoleBindings().Get(s.Name, metav1.GetOptions{})
+			mgr.clientsets[cid].RbacV1().ClusterRoleBindings().Get(context.Background(), s.Name, metav1.GetOptions{})
 			kind = CLUSTER_ROLE_BINDING
 		}
 
@@ -526,45 +527,45 @@ func (mgr *ResourceManager) Delete(n interface{}) error {
 		default:
 			log.Errorf("Invalid kind %T for resource delete action.", s.Kind)
 		case POD:
-			resList, _ := mgr.clientsets[cid].CoreV1().Pods("").List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().Pods("").List(context.Background(), options)
 			for _, item := range resList.Items {
 				log.Infof("Deleting pod %v", item.Name)
 				startTime := metav1.Now()
 				ns := mgr.resNs[item.Name]
-				mgr.clientsets[cid].CoreV1().Pods(ns).Delete(item.Name, nil)
+				mgr.clientsets[cid].CoreV1().Pods(ns).Delete(context.Background(), item.Name, metav1.DeleteOptions{})
 				latencies = append(latencies, metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond))
 				resNames = append(resNames, item.Name)
 			}
 			kind = POD
 		case CONFIG_MAP:
-			resList, _ := mgr.clientsets[cid].CoreV1().ConfigMaps("").List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().ConfigMaps("").List(context.Background(), options)
 			for _, item := range resList.Items {
 				log.Infof("Deleting configmap %v", item.Name)
 				startTime := metav1.Now()
 				ns := mgr.resNs[item.Name]
-				mgr.clientsets[cid].CoreV1().ConfigMaps(ns).Delete(item.Name, nil)
+				mgr.clientsets[cid].CoreV1().ConfigMaps(ns).Delete(context.Background(), item.Name, metav1.DeleteOptions{})
 				latencies = append(latencies, metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond))
 				resNames = append(resNames, item.Name)
 			}
 			kind = CONFIG_MAP
 		case ENDPOINTS:
-			resList, _ := mgr.clientsets[cid].CoreV1().Endpoints("").List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().Endpoints("").List(context.Background(), options)
 			for _, item := range resList.Items {
 				log.Infof("Deleting endpoint %v", item.Name)
 				startTime := metav1.Now()
 				ns := mgr.resNs[item.Name]
-				mgr.clientsets[cid].CoreV1().Endpoints(ns).Delete(item.Name, nil)
+				mgr.clientsets[cid].CoreV1().Endpoints(ns).Delete(context.Background(), item.Name, metav1.DeleteOptions{})
 				latencies = append(latencies, metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond))
 				resNames = append(resNames, item.Name)
 			}
 			kind = ENDPOINTS
 		case EVENT:
-			resList, _ := mgr.clientsets[cid].CoreV1().Events("").List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().Events("").List(context.Background(), options)
 			for _, item := range resList.Items {
 				log.Infof("Deleting event %v", item.Name)
 				startTime := metav1.Now()
 				ns := mgr.resNs[item.Name]
-				mgr.clientsets[cid].CoreV1().Events(ns).Delete(item.Name, nil)
+				mgr.clientsets[cid].CoreV1().Events(ns).Delete(context.Background(), item.Name, metav1.DeleteOptions{})
 				latencies = append(latencies, metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond))
 				resNames = append(resNames, item.Name)
 			}
@@ -573,129 +574,129 @@ func (mgr *ResourceManager) Delete(n interface{}) error {
 			log.Errorf("Delete action is not supported on %s.", COMPONENT_STATUS)
 			return fmt.Errorf("delete action not supported on the resource")
 		case NODE:
-			resList, _ := mgr.clientsets[cid].CoreV1().Nodes().List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().Nodes().List(context.Background(), options)
 			for _, item := range resList.Items {
 				log.Infof("Deleting node %v", item.Name)
 				startTime := metav1.Now()
-				mgr.clientsets[cid].CoreV1().Nodes().Delete(item.Name, nil)
+				mgr.clientsets[cid].CoreV1().Nodes().Delete(context.Background(), item.Name, metav1.DeleteOptions{})
 				latencies = append(latencies, metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond))
 				resNames = append(resNames, item.Name)
 			}
 			kind = NODE
 		case LIMIT_RANGE:
-			resList, _ := mgr.clientsets[cid].CoreV1().LimitRanges("").List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().LimitRanges("").List(context.Background(), options)
 			for _, item := range resList.Items {
 				log.Infof("Deleting limit range %v", item.Name)
 				startTime := metav1.Now()
 				ns := mgr.resNs[item.Name]
-				mgr.clientsets[cid].CoreV1().LimitRanges(ns).Delete(item.Name, nil)
+				mgr.clientsets[cid].CoreV1().LimitRanges(ns).Delete(context.Background(), item.Name, metav1.DeleteOptions{})
 				latencies = append(latencies, metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond))
 				resNames = append(resNames, item.Name)
 			}
 			kind = LIMIT_RANGE
 		case PERSISTENT_VOLUME_CLAIM:
-			resList, _ := mgr.clientsets[cid].CoreV1().PersistentVolumeClaims("").List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().PersistentVolumeClaims("").List(context.Background(), options)
 			for _, item := range resList.Items {
 				log.Infof("Deleting persistent volume claim %v", item.Name)
 				startTime := metav1.Now()
 				ns := mgr.resNs[item.Name]
-				mgr.clientsets[cid].CoreV1().PersistentVolumeClaims(ns).Delete(item.Name, nil)
+				mgr.clientsets[cid].CoreV1().PersistentVolumeClaims(ns).Delete(context.Background(), item.Name, metav1.DeleteOptions{})
 				latencies = append(latencies, metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond))
 				resNames = append(resNames, item.Name)
 			}
 			kind = PERSISTENT_VOLUME_CLAIM
 		case PERSISTENT_VOLUME:
-			resList, _ := mgr.clientsets[cid].CoreV1().PersistentVolumes().List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().PersistentVolumes().List(context.Background(), options)
 			for _, item := range resList.Items {
 				log.Infof("Deleting persistent volume %v", item.Name)
 				startTime := metav1.Now()
-				mgr.clientsets[cid].CoreV1().PersistentVolumes().Delete(item.Name, nil)
+				mgr.clientsets[cid].CoreV1().PersistentVolumes().Delete(context.Background(), item.Name, metav1.DeleteOptions{})
 				latencies = append(latencies, metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond))
 				resNames = append(resNames, item.Name)
 			}
 			kind = PERSISTENT_VOLUME
 		case POD_TEMPLATE:
-			resList, _ := mgr.clientsets[cid].CoreV1().PodTemplates("").List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().PodTemplates("").List(context.Background(), options)
 			for _, item := range resList.Items {
 				log.Infof("Deleting pod template %v", item.Name)
 				startTime := metav1.Now()
 				ns := mgr.resNs[item.Name]
-				mgr.clientsets[cid].CoreV1().PodTemplates(ns).Delete(item.Name, nil)
+				mgr.clientsets[cid].CoreV1().PodTemplates(ns).Delete(context.Background(), item.Name, metav1.DeleteOptions{})
 				latencies = append(latencies, metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond))
 				resNames = append(resNames, item.Name)
 			}
 			kind = POD_TEMPLATE
 		case RESOURCE_QUOTA:
-			resList, _ := mgr.clientsets[cid].CoreV1().ResourceQuotas("").List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().ResourceQuotas("").List(context.Background(), options)
 			for _, item := range resList.Items {
 				log.Infof("Deleting resource quota %v", item.Name)
 				startTime := metav1.Now()
 				ns := mgr.resNs[item.Name]
-				mgr.clientsets[cid].CoreV1().ResourceQuotas(ns).Delete(item.Name, nil)
+				mgr.clientsets[cid].CoreV1().ResourceQuotas(ns).Delete(context.Background(), item.Name, metav1.DeleteOptions{})
 				latencies = append(latencies, metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond))
 				resNames = append(resNames, item.Name)
 			}
 			kind = RESOURCE_QUOTA
 		case SECRET:
-			resList, _ := mgr.clientsets[cid].CoreV1().Secrets("").List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().Secrets("").List(context.Background(), options)
 			for _, item := range resList.Items {
 				log.Infof("Deleting secret %v", item.Name)
 				startTime := metav1.Now()
 				ns := mgr.resNs[item.Name]
-				mgr.clientsets[cid].CoreV1().Secrets(ns).Delete(item.Name, nil)
+				mgr.clientsets[cid].CoreV1().Secrets(ns).Delete(context.Background(), item.Name, metav1.DeleteOptions{})
 				latencies = append(latencies, metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond))
 				resNames = append(resNames, item.Name)
 			}
 			kind = SECRET
 		case SERVICE_ACCOUNT:
-			resList, _ := mgr.clientsets[cid].CoreV1().ServiceAccounts("").List(options)
+			resList, _ := mgr.clientsets[cid].CoreV1().ServiceAccounts("").List(context.Background(), options)
 			for _, item := range resList.Items {
 				log.Infof("Deleting service account %v", item.Name)
 				startTime := metav1.Now()
 				ns := mgr.resNs[item.Name]
-				mgr.clientsets[cid].CoreV1().ServiceAccounts(ns).Delete(item.Name, nil)
+				mgr.clientsets[cid].CoreV1().ServiceAccounts(ns).Delete(context.Background(), item.Name, metav1.DeleteOptions{})
 				latencies = append(latencies, metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond))
 				resNames = append(resNames, item.Name)
 			}
 			kind = SERVICE_ACCOUNT
 		case ROLE:
-			resList, _ := mgr.clientsets[cid].RbacV1().Roles("").List(options)
+			resList, _ := mgr.clientsets[cid].RbacV1().Roles("").List(context.Background(), options)
 			for _, item := range resList.Items {
 				log.Infof("Deleting role %v", item.Name)
 				startTime := metav1.Now()
 				ns := mgr.resNs[item.Name]
-				mgr.clientsets[cid].RbacV1().Roles(ns).Delete(item.Name, nil)
+				mgr.clientsets[cid].RbacV1().Roles(ns).Delete(context.Background(), item.Name, metav1.DeleteOptions{})
 				latencies = append(latencies, metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond))
 				resNames = append(resNames, item.Name)
 			}
 			kind = ROLE
 		case ROLE_BINDING:
-			resList, _ := mgr.clientsets[cid].RbacV1().RoleBindings("").List(options)
+			resList, _ := mgr.clientsets[cid].RbacV1().RoleBindings("").List(context.Background(), options)
 			for _, item := range resList.Items {
 				log.Infof("Deleting role binding %v", item.Name)
 				startTime := metav1.Now()
 				ns := mgr.resNs[item.Name]
-				mgr.clientsets[cid].RbacV1().RoleBindings(ns).Delete(item.Name, nil)
+				mgr.clientsets[cid].RbacV1().RoleBindings(ns).Delete(context.Background(), item.Name, metav1.DeleteOptions{})
 				latencies = append(latencies, metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond))
 				resNames = append(resNames, item.Name)
 			}
 			kind = ROLE_BINDING
 		case CLUSTER_ROLE:
-			resList, _ := mgr.clientsets[cid].RbacV1().ClusterRoles().List(options)
+			resList, _ := mgr.clientsets[cid].RbacV1().ClusterRoles().List(context.Background(), options)
 			for _, item := range resList.Items {
 				log.Infof("Deleting cluster role %v", item.Name)
 				startTime := metav1.Now()
-				mgr.clientsets[cid].RbacV1().ClusterRoles().Delete(item.Name, nil)
+				mgr.clientsets[cid].RbacV1().ClusterRoles().Delete(context.Background(), item.Name, metav1.DeleteOptions{})
 				latencies = append(latencies, metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond))
 				resNames = append(resNames, item.Name)
 			}
 			kind = CLUSTER_ROLE
 		case CLUSTER_ROLE_BINDING:
-			resList, _ := mgr.clientsets[cid].RbacV1().ClusterRoleBindings().List(options)
+			resList, _ := mgr.clientsets[cid].RbacV1().ClusterRoleBindings().List(context.Background(), options)
 			for _, item := range resList.Items {
 				log.Infof("Deleting cluster role binding %v", item.Name)
 				startTime := metav1.Now()
-				mgr.clientsets[cid].RbacV1().ClusterRoleBindings().Delete(item.Name, nil)
+				mgr.clientsets[cid].RbacV1().ClusterRoleBindings().Delete(context.Background(), item.Name, metav1.DeleteOptions{})
 				latencies = append(latencies, metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond))
 				resNames = append(resNames, item.Name)
 			}
@@ -732,13 +733,13 @@ func (mgr *ResourceManager) Delete(n interface{}) error {
  */
 func (mgr *ResourceManager) DeleteAll() error {
 	if mgr.namespace != apiv1.NamespaceDefault {
-		mgr.client.CoreV1().Namespaces().Delete(mgr.namespace, nil)
+		mgr.client.CoreV1().Namespaces().Delete(context.Background(), mgr.namespace, metav1.DeleteOptions{})
 	}
 
 	// Delete other non default namespaces
 	for ns, _ := range mgr.nsSet {
 		if ns != apiv1.NamespaceDefault {
-			mgr.client.CoreV1().Namespaces().Delete(ns, nil)
+			mgr.client.CoreV1().Namespaces().Delete(context.Background(), ns, metav1.DeleteOptions{})
 		}
 	}
 	mgr.nsSet = make(map[string]bool, 0)

@@ -23,6 +23,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
 )
 
 func genPodSpec(image string,
@@ -303,4 +304,35 @@ func genRcSpec(image string,
 	}
 
 	return rc
+}
+
+func genVmSpec(classname string,
+	image string,
+	storageclass string,
+	powerstate string,
+	on int,
+	as manager.ActionSpec) *v1alpha1.VirtualMachine {
+	labels := map[string]string{
+		"app":   manager.AppName,
+		"type":  vmType,
+		"opnum": strconv.Itoa(on),
+		"tid":   strconv.Itoa(as.Tid),
+	}
+	if as.LabelKey != "" && as.LabelValue != "" {
+		labels[as.LabelKey] = as.LabelValue
+	}
+	spec := &v1alpha1.VirtualMachine{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: as.Namespace,
+			Name:      as.Name,
+			Labels:    labels,
+		},
+		Spec: v1alpha1.VirtualMachineSpec{
+			ClassName: classname,
+			ImageName: image, //"ubuntu-20-04-vmservice-v1alpha1-20210528-ovf",
+			StorageClass: storageclass,
+			PowerState: "poweredOn",
+		},
+	}
+	return spec
 }

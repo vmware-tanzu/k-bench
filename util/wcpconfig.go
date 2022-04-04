@@ -31,6 +31,13 @@ type ImageSpec struct {
 	ImagePullPolicy string // Always, IfNotPresent, or Never
 }
 
+type VirtualMachineSpecStruct struct {
+	ClassName           string
+	ImageName           string
+	StorageClass        string
+	PowerState          string
+}
+
 type FilterSpec struct {
 	LabelKey       string
 	LabelValue     string
@@ -89,6 +96,7 @@ type ActionSpec struct {
 	CopySpec
 	RunSpec
 	NumReplicas int32
+	VirtualMachineSpecStruct
 }
 
 type Action struct {
@@ -142,6 +150,19 @@ type PodConfig struct {
 	FileSpec CopySpec
 }
 
+type VmConfig struct {
+	Namespace           string
+	ClassName           string
+	ImageName           string
+	StorageClass        string
+	PowerState          string
+	Count               int      // Number of pod actions to run in parallel (concurrency)
+	Actions             []Action // CREATE, GET, UPDATE, RUN, LIST, or DELETE
+	SleepTimes          []int    // Sleep time in ms after each action
+	VmNamePrefix       string   // A prefix for a set of pods in an operation
+	FilterSpec
+}
+
 type NamespaceConfig struct {
 	Count      int
 	Actions    []Action // CREATE, GET, UPDATE, LIST, or DELETE
@@ -182,6 +203,7 @@ type ResourceConfig struct {
 type WcpOp struct {
 	Predicate             PredicateSpec
 	Pod                   PodConfig                   `json:"Pods"`
+	VirtualMachine        VmConfig                    `json:"VirtualMachines"`
 	Deployment            DeploymentConfig            `json:"Deployments"`
 	StatefulSet           StatefulSetConfig           `json:"StatefulSets"`
 	Namespace             NamespaceConfig             `json:"Namespaces"`
