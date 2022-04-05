@@ -108,7 +108,7 @@ func main() {
 	formatter.TimestampFormat = "2006-01-02T15:04:05.000"
 	log.SetFormatter(formatter)
 
-	log.Info("Starting kbench...")
+	log.Info("Starting kbench... for CRD")
 	fmt.Printf("Starting benchmark, writing logs to " + filepath.Join(*outDir+"/kbench.log") + "... \n")
 
 	var testConfigs []util.TestConfig

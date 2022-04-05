@@ -34,37 +34,37 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
 )
 
-// func checkAndRunVM(
-// 	kubeConfig *restclient.Config,
-// 	op WcpOp,
-// 	opIdx int,
-// 	maxClients map[string]int) string {
-// 	if len(op.Virtualmachines.Actions) > 0 {
+func checkAndRunVM(
+	kubeConfig *restclient.Config,
+	op WcpOp,
+	opIdx int,
+	maxClients map[string]int) string {
+	if len(op.VirtualMachine.Actions) > 0 {
+		var vmMgr *manager.VmManager
 
-// 		var vmMgr *manager.VmManager
+		if mgr, ok := mgrs[manager.VIRTUALMACHINE]; ok {
+			vmMgr = mgr.(*manager.VmManager)
+		} else {
+			mgrs[manager.VIRTUALMACHINE], _ = manager.GetManager(manager.VIRTUALMACHINE)
+			vmMgr = mgrs[manager.VIRTUALMACHINE].(*manager.VmManager)
+			vmMgr.Init(kubeConfig, vmNamespace, true,
+				maxClients[manager.VIRTUALMACHINE], vmType)
+		}
 
-// 		if mgr, ok := mgrs[manager.]; ok {
-// 			vmMgr = mgr.(*manager.VmManager)
-// 		} else {
-// 			mgrs[manager.VIRTUALMACHINE], _ = manager.GetManager(manager.VIRTUALMACHINE)
-// 			vmMgr = mgrs[manager.VIRTUALMACHINE].(*manager.VmManager)
-// 			vmMgr.Init(kubeConfig, vmNamespace, true,
-// 				maxClients[manager.VIRTUALMACHINE], vmType)
-// 		}
+		log.Infof("Performing VM actions in operation %v", opIdx)
 
-// 		log.Infof("Performing VM actions in operation %v", opIdx)
+		for i := 0; i < op.VirtualMachine.Count; i++ {
+			go runVmActions(vmMgr, op.VirtualMachine, opIdx, i)
+			wg.Add(1)
+		}
 
-// 		for i := 0; i < op.Virtualmachines.Count; i++ {
-// 			go runVmActions(vmMgr, op.Virtualmachines, opIdx, i)
-// 			wg.Add(1)
-// 		}
-
-// 		return op.Virtualmachines.Actions[len(op.Virtualmachines.Actions)-1].Act
-// 	}
-// 	return ""
-// }
+		return op.VirtualMachine.Actions[len(op.VirtualMachine.Actions)-1].Act
+	}
+	return ""
+}
 
 
 func checkAndRunPod(
@@ -72,7 +72,6 @@ func checkAndRunPod(
 	op WcpOp,
 	opIdx int,
 	maxClients map[string]int) string {
-	log.Info("Driver Util checkAndRunPod called.........")
 	if len(op.Pod.Actions) > 0 {
 
 		var podMgr *manager.PodManager
@@ -428,7 +427,6 @@ func runPodActions(
 					spec.Labels[lk] = lv
 				}
 			}
-			log.Info("Driver Util Create Pod called.........")
 			ae := mgr.ActionFuncs[manager.CREATE_ACTION](mgr, spec)
 			if ae != nil {
 				log.Error(ae)
@@ -484,6 +482,119 @@ func runPodActions(
 	}
 
 	wg.Done()
+}
+
+func runVmActions(
+	mgr *manager.VmManager,
+	vmConfig VmConfig,
+	opNum int,
+	tid int) {
+
+	// Get default pod name (used when filtering not specified or applicable)
+	vmName := mgr.GetResourceName(vmConfig.VmNamePrefix, opNum, tid)
+
+	actions := vmConfig.Actions
+
+	created := false
+
+	sleepTimes := vmConfig.SleepTimes
+
+	si := 0
+
+	for _, action := range actions {
+		var lk, lv string
+		ns := vmNamespace
+
+		if vmConfig.Namespace != "" {
+			ns = vmConfig.Namespace
+		}
+		actStr := strings.ToLower(action.Act)
+
+		if actStr == manager.CREATE_ACTION {
+			if created {
+				log.Warningf("Only one CREATE may be executed in an operation, skipped.")
+				continue
+			} else {
+				created = true
+			}
+
+			var spec *v1alpha1.VirtualMachine
+
+			createSpec := action.Spec
+			updateLabelNs(createSpec, vmConfig.LabelKey, vmConfig.LabelValue, &ns, &lk, &lv)
+
+			// obj, derr := decodeYaml(createSpec.YamlSpec)
+			// if obj != nil && derr == nil {
+			// 	spec = obj.(*v1alpha1.VirtualMachineSpec)
+			// 	if spec.Kind != "VirtualMachine" {
+			// 		log.Warningf("Invalid kind specified in yaml for pod creation: %v",
+			// 			spec.Kind)
+			// 		spec = nil
+			// 	}
+			// }
+
+			if spec == nil {
+				as := manager.ActionSpec{vmName, tid, opNum, ns,
+					lk, lv, true, "", manager.VIRTUALMACHINE}			
+				// spec = genVmSpec(createSpec.ClassName, createSpec.ImageName, createSpec.StorageClass, "poweredOn",//createSpec.PowerState,
+				// 		opNum, as)
+				spec = genVmSpec("best-effort-small", "photon-3-k8s-v1.20.7---vmware.1-tkg.1.7fb9067", "wcp-storage-policy", "poweredOn",//createSpec.PowerState,
+						opNum, as)
+			} else {
+				//Name from yaml file are not respected to ensure integrity.
+				spec.Name = vmName
+
+				if spec.Namespace == "" {
+					spec.Namespace = ns
+				} else {
+					ns = spec.Namespace
+				}
+				v := reflect.ValueOf(spec.Spec)
+				for i := 0; i < v.NumField(); i++ {
+					spec.Spec.ClassName = spec.Spec.ClassName
+					spec.Spec.ImageName = spec.Spec.ImageName
+					spec.Spec.StorageClass = spec.Spec.StorageClass
+					spec.Spec.PowerState = spec.Spec.PowerState
+				}
+
+				if spec.Labels == nil {
+					spec.Labels = make(map[string]string, 0)
+				}
+
+				updateLabels(spec.Labels, vmType, opNum, tid)
+
+				if lk != "" && lv != "" {
+					spec.Labels[lk] = lv
+				}
+			}
+			log.Info("Driver Util Create VM called.........")
+			ae := mgr.ActionFuncs[manager.CREATE_ACTION](mgr, spec)
+			if ae != nil {
+				log.Error(ae)
+			}
+		} else if actionFunc, ok := mgr.ActionFuncs[actStr]; ok {
+			lusdSpec := action.Spec
+			updateLabelNs(lusdSpec, vmConfig.LabelKey, vmConfig.LabelValue, &ns, &lk, &lv)
+
+			as := manager.ActionSpec{
+				vmName, tid, opNum, ns, lk, lv,
+				lusdSpec.MatchGoroutine, lusdSpec.MatchOperation, manager.VIRTUALMACHINE}
+			ae := actionFunc(mgr, as)
+
+			if ae != nil {
+				log.Error(ae)
+			}
+		}
+
+		// TODO: add optional status checking logic here
+		if si < len(sleepTimes) {
+			log.Infof("Sleep %v mili-seconds after %v action", sleepTimes[si], action.Act)
+			time.Sleep(time.Duration(sleepTimes[si]) * time.Millisecond)
+			si++
+		}
+	}
+
+	//wg.Done()
 }
 
 // A function that runs a set of Deployment actions
@@ -1181,6 +1292,8 @@ func waitForPodRelatedOps(
 		t = rcType
 	} else if resKind == manager.STATEFUL_SET {
 		t = ssType
+	} else if resKind == manager.VIRTUALMACHINE {
+		t = vmType
 	}
 	// Wait for pod action (deletion or creation)
 	if strings.ToLower(lastAction) == manager.DELETE_ACTION {
@@ -1233,6 +1346,9 @@ func waitForPodRelatedOps(
 				} else if resKind == manager.REPLICATION_CONTROLLER {
 					rcMgr := mgr.(*manager.ReplicationControllerManager)
 					stable = rcMgr.IsStable()
+				} else if resKind == manager.VIRTUALMACHINE {
+					vmMgr := mgr.(*manager.VmManager)
+					stable = vmMgr.IsStable()
 				}
 				if !stable {
 					log.Infof("Not all %v are running, wait for %v mili-seconds...",

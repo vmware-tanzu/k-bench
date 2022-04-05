@@ -39,7 +39,7 @@ import (
 
 const (
 	podNamespace string = "kbench-pod-namespace"
-	vmNamespace string = "kbench-vm-namespace"
+	vmNamespace string = "ns1"
 	depNamespace string = "kbench-deployment-namespace"
 	ssNamespace  string = "kbench-statefulset-namespace"
 	svcNamespace string = "kbench-service-namespace"
@@ -73,7 +73,6 @@ var mgrs map[string]manager.Manager
 
 func Run(kubeConfig *restclient.Config,
 	testConfig TestConfig, outputDir *string) error {
-	log.Info("tesdriver Run called .........")
 
 	outDir = outputDir
 	wcpOps := testConfig.Operations
@@ -220,9 +219,9 @@ func Run(kubeConfig *restclient.Config,
 			opIdx += startIdx
 
 			// Check and run if valid pod config is found
-			log.Info("tesdriver checkAndRunPod calling.........")
 			lastPodAction := checkAndRunPod(kubeConfig, op, opIdx, maxClients)
 
+			lastVmAction := checkAndRunVM(kubeConfig, op, opIdx, maxClients)
 			// Check and run if valid deployment config is found
 			lastDepAction := checkAndRunDeployment(kubeConfig, op, opIdx, maxClients)
 
@@ -279,6 +278,10 @@ func Run(kubeConfig *restclient.Config,
 				if totalWait < timeout {
 					totalWait += waitForPodRelatedOps(mgrs, driverClient, manager.STATEFUL_SET,
 						lastSsAction, timeout, interval, opIdx)
+				}
+				if totalWait < timeout {
+					totalWait += waitForPodRelatedOps(mgrs, driverClient, manager.VIRTUALMACHINE,
+						lastVmAction, timeout, interval, opIdx)
 				}
 
 				if totalWait >= timeout {
