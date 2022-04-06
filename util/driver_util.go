@@ -536,9 +536,7 @@ func runVmActions(
 			if spec == nil {
 				as := manager.ActionSpec{vmName, tid, opNum, ns,
 					lk, lv, true, "", manager.VIRTUALMACHINE}			
-				// spec = genVmSpec(createSpec.ClassName, createSpec.ImageName, createSpec.StorageClass, "poweredOn",//createSpec.PowerState,
-				// 		opNum, as)
-				spec = genVmSpec("best-effort-small", "photon-3-k8s-v1.20.7---vmware.1-tkg.1.7fb9067", "wcp-storage-policy", "poweredOn",//createSpec.PowerState,
+				spec = genVmSpec(createSpec.ClassName, createSpec.ImageName, createSpec.StorageClass, createSpec.PowerState,
 						opNum, as)
 			} else {
 				//Name from yaml file are not respected to ensure integrity.

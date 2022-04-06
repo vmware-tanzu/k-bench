@@ -6,6 +6,7 @@ import (
 	"time"
 	"sync"
 	"strconv"
+	"sort"
 	"strings"
 	//"path/filepath"
 	log "github.com/sirupsen/logrus"
@@ -41,15 +42,11 @@ const vmNamePrefix string = "kbench-vm-"
 type VmManager struct {
 	client ctrlClient.Client
 	clientsets []ctrlClient.Client
-	
-	// st map[string]metav1.Time
-	// cst map[string]metav1.Time
-	// ct  map[string]metav1.Time
-	gt map[string]string
-	vmThroughput float32
-	vmAvgLatency float32 
-	Wg sync.WaitGroup
-	statsMutex sync.RWMutex
+	// Mark the client side time stamp for virtual Machines
+	creationStartedTimes map[string]metav1.Time
+	createdTimes map[string]metav1.Time
+	gotIpTimes  map[string]metav1.Time
+	ReadyTimes map[string]metav1.Time
 
 	// A map to track the API response time for the supported actions
 	apiTimes map[string][]time.Duration
@@ -58,77 +55,71 @@ type VmManager struct {
 	source    string
 	config    *restclient.Config
 
-	// podNs map[string]string // Used to track pods to namespaces mappings
-	// nsSet map[string]bool   // Used to track created non-default namespaces
+	vmNs map[string]string // Used to track pods to namespaces mappings
+	nsSet map[string]bool   // Used to track created non-default namespaces
 
+	statsMutex sync.RWMutex
+	vmMutex sync.Mutex
 	alMutex sync.Mutex
 
 	// Action functions
 	ActionFuncs map[string]func(*VmManager, interface{}) error
 
+	vmController cache.Controller
 	vmChan       chan struct{}
-
-	negRes        bool
+	//gt map[string]string
+	vmThroughput float32
+	vmAvgLatency float32
+	negRes        bool 
 
 	startTimestamp string
-	podMutex sync.Mutex
+	Wg sync.WaitGroup
 
-	// createToScheLatency, scheToStartLatency   perf_util.OperationLatencyMetric
-	// startToPulledLatency, pulledToRunLatency  perf_util.OperationLatencyMetric
-	// createToRunLatency, firstToSchedLatency   perf_util.OperationLatencyMetric
-	// schedToInitdLatency, initdToReadyLatency  perf_util.OperationLatencyMetric
-	// firstToReadyLatency, createToReadyLatency perf_util.OperationLatencyMetric
+	creationToCreatedLatency, createdToGotIpLatency, creationToReadyLatency   perf_util.OperationLatencyMetric
 }
 
 func NewVmManager() Manager {
-	//clientsets := make([]ctrlClient.Client, maxClients)
-	// creationStartedTimes := make(map[string]metav1.Time, 0)
-	// startTime := make(map[string]metav1.Time, 0)
-	// createdTimes := make(map[string]metav1.Time, 0)
-	// gotIpTimes := make(map[string]metav1.Time, 0)
+	cst := make(map[string]metav1.Time, 0)
+	ct :=  make(map[string]metav1.Time, 0)
+	git := make(map[string]metav1.Time, 0)
+	rt :=  make(map[string]metav1.Time, 0)
 
 	apt := make(map[string][]time.Duration, 0)
 
-	// pn := make(map[string]metav1.Time, 0)
-	// ns := make(map[string]bool, 0)
+	vmn := make(map[string]string, 0)
+	ns := make(map[string]bool, 0)
 	af := make(map[string]func(*VmManager, interface{}) error, 0)
 
 	af[CREATE_ACTION] = (*VmManager).Create
-	//af[RUN_ACTION] = (*VmManager).Run
-	//af[DELETE_ACTION] = (*VmManager).Delete
-	//af[LIST_ACTION] = (*VmManager).List
-	//af[GET_ACTION] = (*VmManager).Get
-	//af[UPDATE_ACTION] = (*VmManager).Update
-	//af[COPY_ACTION] = (*VmManager).Copy
+	af[DELETE_ACTION] = (*VmManager).Delete
+	af[LIST_ACTION] = (*VmManager).List
 
-	vc := make(chan struct{})
+	vmc := make(chan struct{})
 
 	return &VmManager{
-		// creationStartedTimes: cst,
-		// createdTimes: ct,
-		// gotIpTimes: gt,
-		// startTime: st,
+		creationStartedTimes:	cst,
+		createdTimes:	ct,
+		gotIpTimes:		git,
+		ReadyTimes:		rt,
 
 		apiTimes: apt,
 
 		namespace: "kbench-vm-namespace", //apiv1.NamespaceDefault,
-		//podNs:     pn,
-		//nsSet:     ns,
+		vmNs:     vmn,
+		nsSet:     ns,
 
 		statsMutex: sync.RWMutex{},
-		podMutex:   sync.Mutex{},
+		vmMutex:    sync.Mutex{},
 		alMutex:    sync.Mutex{},
 
 		ActionFuncs: af,
 		//podController: nil,
-		vmChan:      vc,
-		//startTimestamp: metav1.Now().Format("2006-01-02T15-04-05"),
+		vmChan:      vmc,
+		startTimestamp: metav1.Now().Format("2006-01-02T15-04-05"),
 	}
 }
 
-// // This function checks the pod's status and updates various timestamps.
-
-// // This function adds cache with watch list and event handler
+// This function adds cache with watch list and event handler
 func (mgr *VmManager) initCache(resourceType string) {
 	dynamicClient, err := dynamic.NewForConfig(mgr.config)
 	if err != nil {
@@ -141,16 +132,14 @@ func (mgr *VmManager) initCache(resourceType string) {
 		AddFunc: func(obj interface{}) {
 			mgr.statsMutex.Lock()
 			defer mgr.statsMutex.Unlock()
-			fmt.Printf("Virtual Machine Added to the cluster.........................\n")
 			u := obj.(*unstructured.Unstructured)
 			unstructured := u.UnstructuredContent()
 	 		var myvirtualmachine v1alpha1.VirtualMachine
 	 		err = runtime.DefaultUnstructuredConverter.FromUnstructured(unstructured, &myvirtualmachine)
-			//fmt.Printf("my vm object is ",myvirtualmachine.Status.Phase)
+
 			if  myvirtualmachine.Status.Phase == "" {
-				//mgr.creationStartedTimes[myvirtualmachine.GetName()] = time.Now().Format("2006-01-02T15-04-05.999")
+				mgr.creationStartedTimes[myvirtualmachine.GetName()] = metav1.Now()
 				log.Info("Virtual Machine Creation Started")
-				fmt.Printf("Virtual Machine Creation Started !!...%s---..%s\n",myvirtualmachine.GetName(),time.Now().Format("2006-01-02T15-04-05.999"))
 			}
 
 		},
@@ -164,15 +153,13 @@ func (mgr *VmManager) initCache(resourceType string) {
 			err = runtime.DefaultUnstructuredConverter.FromUnstructured(unstructured, &myvirtualmachine)
 
 			if myvirtualmachine.Status.VmIp != "" {
-				//mgr.gotIpTimes[myvirtualmachine.GetName()] = time.Now().Format("2006-01-02T15-04-05.999")
+				mgr.gotIpTimes[myvirtualmachine.GetName()] = metav1.Now()
+				mgr.ReadyTimes[myvirtualmachine.GetName()] = metav1.Now()
 				log.Info("Virtual Machine got IP Address")
-				fmt.Printf("\nVm Machine %s got IP Address  %s --At time %s\n\n",myvirtualmachine.GetName(), myvirtualmachine.Status.VmIp,time.Now().Format("2006-01-02T15-04-05.999"))
 				
 			} else if myvirtualmachine.Status.PowerState == v1alpha1.VirtualMachinePoweredOn || myvirtualmachine.Status.Phase == v1alpha1.Created {
-				//mgr.createdTimes[myvirtualmachine.GetName()] = time.Now().Format("2006-01-02T15-04-05.999")
+				mgr.createdTimes[myvirtualmachine.GetName()] = metav1.Now()
 				log.Info("Virtual Machine Created")
-				fmt.Printf("\nVirtual Machine Created %s !!.....%s\n",myvirtualmachine.GetName(),time.Now().Format("2006-01-02T15-04-05.999"))
-				fmt.Printf("\nHey Virtual Machine is powered ON %s !!.......%s\n",myvirtualmachine.GetName(),time.Now().Format("2006-01-02T15-04-05.999"))
 			}
 		},
 	})
@@ -186,51 +173,9 @@ func (mgr *VmManager) initCache(resourceType string) {
 	}()
 }
 
-// /*
-//  * This function updates the stats before deletion
-//  */
-// func (mgr *VmManager) UpdateBeforeDeletion(name string, ns string) {
-// 	// Before deletion, make sure schedule and pulled time retrieved for this pod
-// 	// As deletes may happen in multi-threaded section, need to protect the update
-// 	mgr.statsMutex.Lock()
-// 	if _, ok := mgr.scheduleTimes[name]; !ok {
-// 		selector := fields.Set{
-// 			"involvedObject.kind":      "Pod",
-// 			"involvedObject.namespace": ns,
-// 			//"source":                   apiv1.DefaultSchedulerName,
-// 		}.AsSelector().String()
-// 		options := metav1.ListOptions{FieldSelector: selector}
-// 		//TODO: move the below statement out side the lock?
-// 		events, err := mgr.client.CoreV1().Events("").List(context.Background(), options)
-// 		if err != nil {
-// 			log.Error(err)
-// 		} else {
-// 			scheEvents := make(map[string]metav1.Time, 0)
-// 			pulledEvents := make(map[string]metav1.Time, 0)
-// 			for _, event := range events.Items {
-// 				if event.Source.Component == apiv1.DefaultSchedulerName {
-// 					scheEvents[event.InvolvedObject.Name] = event.FirstTimestamp
-// 				} else if event.Reason == "Pulled" {
-// 					pulledEvents[event.InvolvedObject.Name] = event.FirstTimestamp
-// 				}
-// 			}
-
-// 			for k := range mgr.createTimes {
-// 				if _, sche_exist := scheEvents[k]; sche_exist {
-// 					mgr.scheduleTimes[k] = scheEvents[k]
-// 				}
-// 				if _, pull_exist := scheEvents[k]; pull_exist {
-// 					mgr.pulledTimes[k] = pulledEvents[k]
-// 				}
-// 			}
-// 		}
-// 	}
-// 	mgr.statsMutex.Unlock()
-// }
-
-// /*
-//  * This function implements the Init interface and is used to initialize the manager
-//  */
+/*
+ * This function implements the Init interface and is used to initialize the manager
+ */
 func (mgr *VmManager) Init(
 	kubeConfig *restclient.Config,
 	nsName string,
@@ -274,236 +219,230 @@ func (mgr *VmManager) Init(
 
 }
 
-// /*
-//  * This function implements the CREATE action.
-//  */
+/*
+ * This function implements the CREATE action.
+ */
 func (mgr *VmManager) Create(spec interface{}) error {
-	obj := spec.(*v1alpha1.VirtualMachine)
+	vmspec := spec.(*v1alpha1.VirtualMachine)
 	switch s := spec.(type) {
 	default:
 		//log.Errorf("Invalid spec type %T for Pod create action.", s)
 		return fmt.Errorf("Invalid spec type %T for Vm create action.", s)
 	case *v1alpha1.VirtualMachine:
-	tid, _ := strconv.Atoi(s.Labels["tid"])
-	cid := tid % len(mgr.clientsets)
+		tid, _ := strconv.Atoi(s.Labels["tid"])
+		cid := tid % len(mgr.clientsets)
 
-	//ns := mgr.namespace
-	// newVM := v1alpha1.VirtualMachine{
-	// 	TypeMeta: metav1.TypeMeta{},
-	// 	ObjectMeta: metav1.ObjectMeta{
-	// 		Name:       "crd",
-	// 		Namespace:  "ns1",
-	// 	},
-	// 	Spec: v1alpha1.VirtualMachineSpec{
-	// 		ClassName: "best-effort-small",
-	// 		ImageName: "photon-3-k8s-v1.20.7---vmware.1-tkg.1.7fb9067", //"ubuntu-20-04-vmservice-v1alpha1-20210528-ovf",
-	// 		StorageClass: "wcp-storage-policy",
-	// 		PowerState: "poweredOn",
-	// 	},
-	// }
-	startTime := metav1.Now()
-	log.Info("Start Creating VM's in VM Manager!!........")
-	err := mgr.clientsets[cid].Create(context.TODO(), obj)
-	if err != nil {
-		fmt.Printf("Error ",err)
-		panic(err)
-	}
-	latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
+		startTime := metav1.Now()
+		log.Info("Start Creating VM's in VM Manager!!........")
+		err := mgr.clientsets[cid].Create(context.TODO(), vmspec)
+		if err != nil {
+			fmt.Printf("Error ",err)
+			panic(err)
+		}
+		latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
-	mgr.alMutex.Lock()
-	mgr.apiTimes[CREATE_ACTION] = append(mgr.apiTimes[CREATE_ACTION], latency)
-	mgr.alMutex.Unlock()
+		mgr.alMutex.Lock()
+		mgr.apiTimes[CREATE_ACTION] = append(mgr.apiTimes[CREATE_ACTION], latency)
+		mgr.alMutex.Unlock()
 
-		// mgr.podMutex.Lock()
-		// mgr.podNs[pod.Name] = ns
-		// mgr.podMutex.Unlock()
+		// mgr.vmMutex.Lock()
+		// mgr.vmNs[vm.Name] = ns
+		// mgr.vmMutex.Unlock()
 	}
 	return nil
 }
 
-// /*
-//  * This function implements the LIST action.
-//  */
-// func (mgr *VmManager) List(n interface{}) error {
+/*
+ * This function implements the LIST action.
+ */
+func (mgr *VmManager) List(n interface{}) error {
+	switch s := n.(type) {
+	default:
+		log.Errorf("Invalid spec type %T for Pod list action.", s)
+		return fmt.Errorf("Invalid spec type %T for Pod list action.", s)
+	case ActionSpec:
+		//options := GetListOptions(s)
+		vmList := v1alpha1.VirtualMachineList{}
+		cid := s.Tid % len(mgr.clientsets)
 
-// 	// switch s := n.(type) {
-// 	// default:
-// 	// 	log.Errorf("Invalid spec type %T for Pod list action.", s)
-// 	// 	return fmt.Errorf("Invalid spec type %T for Pod list action.", s)
-// 	// case ActionSpec:
-// 	options := GetListOptions(s)
+		// ns := mgr.namespace
+		// if s.Namespace != "" {
+		// 	ns = s.Namespace
+		// }
 
-// 	cid := s.Tid % len(mgr.clientsets)
+		startTime := metav1.Now()
+		err := mgr.clientsets[cid].List(context.Background(), &vmList)
+		latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
-// 	ns := mgr.namespace
-// 	if s.Namespace != "" {
-// 		ns = s.Namespace
-// 	}
+		if err != nil {
+			return err
+		}
 
-// 	startTime := metav1.Now()
-// 	pods, err := mgr.clientsets[cid].List(context.Background(), options)
-// 	latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
+		mgr.alMutex.Lock()
+		mgr.apiTimes[LIST_ACTION] = append(mgr.apiTimes[LIST_ACTION], latency)
+		mgr.alMutex.Unlock()
+	}
+	return nil
+}
 
-// 	if err != nil {
-// 		return err
-// 	}
-// 	log.Infof("Listed %v pods", len(pods.Items))
-
-// 	mgr.alMutex.Lock()
-// 	mgr.apiTimes[LIST_ACTION] = append(mgr.apiTimes[LIST_ACTION], latency)
-// 	mgr.alMutex.Unlock()
-// 	//}
-// 	return nil
-// }
-
-// /*
-//  * This function implements the GET action.
-//  */
-// func (mgr *VmManager) Get(n interface{}) error {
-
-// 	// switch s := n.(type) {
-// 	// default:
-// 	// 	log.Errorf("Invalid spec type %T for Pod get action.", s)
-// 	// 	return fmt.Errorf("Invalid spec type %T for Pod get action.", s)
-// 	// case ActionSpec:
-// 	cid := s.Tid % len(mgr.clientsets)
-// 	ns := mgr.namespace
-// 	if s.Namespace != "" {
-// 		ns = s.Namespace
-// 	}
-// 	// Labels (or other filters) are ignored as they do not make sense to GET
-// 	startTime := metav1.Now()
-// 	pod, err := mgr.clientsets[cid].Get(context.Background(), s.Name, metav1.GetOptions{})
-// 	latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
-
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	log.Infof("Got pod %v", pod.Name)
-
-// 	mgr.alMutex.Lock()
-// 	mgr.apiTimes[GET_ACTION] = append(mgr.apiTimes[GET_ACTION], latency)
-// 	mgr.alMutex.Unlock()
-// 	//}
-// 	return nil
-// }
-
-// /*
-//  * This function implements the RUN action.
-//  */
-
-// /*
-//  * This function implements the COPY action.
-//  */
-
-
-// /*
-//  * This function implements the UPDATE action.
-//  */
-
-// /*
-//  * This function implements the DELETE action.
-//  */
+/*
+ * This function implements the DELETE action.
+ */
 func (mgr *VmManager) Delete(n interface{}) error {
-	// switch s := n.(type) {
-	// default:
-	// 	log.Errorf("Invalid spec %T for Pod delete action.", s)
-	// 	return fmt.Errorf("Invalid spec %T for Pod delete action.", s)
-	// case ActionSpec:
-	// cid := s.Tid % len(mgr.clientsets)
+	switch s := n.(type) {
+	default:
+		log.Errorf("Invalid spec %T for Pod delete action.", s)
+		return fmt.Errorf("Invalid spec %T for Pod delete action.", s)
+	case ActionSpec:
+	cid := s.Tid % len(mgr.clientsets)
 
-	// options := GetListOptions(s)
-
-	// ns := mgr.namespace
-	// /*if space, ok := mgr.podNs[s.Name]; ok {
-	// 	ns = space
-	// }*/
+	//options := GetListOptions(s)
+	vmList := v1alpha1.VirtualMachineList{}
+	//ns := mgr.namespace
+	/*if space, ok := mgr.vmNs[s.Name]; ok {
+		ns = space
+	}*/
 
 	// if s.Namespace != "" {
 	// 	ns = s.Namespace
 	// }
 
-	// pods := make([]apiv1.Pod, 0)
+	vms := make([]v1alpha1.VirtualMachine, 0)
 
-	// podList, err := mgr.clientsets[cid].List(context.Background(), options)
-	// if err != nil {
-	// 	return err
-	// }
-	// pods = podList.Items
+	err := mgr.clientsets[cid].List(context.Background(), &vmList)
+	if err != nil {
+		return err
+	}
+	vms = vmList.Items
 
-	// for _, currPod := range pods {
-	// 	log.Infof("Deleting pod %v", currPod.Name)
-	// 	if _, ok := mgr.scheduleTimes[currPod.Name]; !ok {
-	// 		mgr.UpdateBeforeDeletion(currPod.Name, ns)
-	// 	}
+	for _, currVm := range vms {
+		log.Infof("Deleting pod %v", currVm.Name)
+		if _, ok := mgr.createdTimes[currVm.Name]; !ok {
+			//mgr.UpdateBeforeDeletion(currVm.Name, ns)
+		}
 
-	// 	// Delete the pod
-	// 	startTime := metav1.Now()
-	// 	mgr.clientsets[cid].Delete(context.Background(), currPod.Name, metav1.DeleteOptions{})
-	// 	latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
+		// Delete the pod
+		startTime := metav1.Now()
+		mgr.clientsets[cid].Delete(context.Background(), &currVm)
+		latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
-	// 	mgr.alMutex.Lock()
-	// 	mgr.apiTimes[DELETE_ACTION] = append(mgr.apiTimes[DELETE_ACTION], latency)
-	// 	mgr.alMutex.Unlock()
+		mgr.alMutex.Lock()
+		mgr.apiTimes[DELETE_ACTION] = append(mgr.apiTimes[DELETE_ACTION], latency)
+		mgr.alMutex.Unlock()
 
-	// 	mgr.podMutex.Lock()
-	// 	// Delete it from the pod set
-	// 	_, ok := mgr.podNs[currPod.Name]
+		mgr.vmMutex.Lock()
+		// Delete it from the pod set
+		_, ok := mgr.vmNs[currVm.Name]
 
-	// 	if ok {
-	// 		delete(mgr.podNs, currPod.Name)
-	// 	}
-	// 	mgr.podMutex.Unlock()
-	// }
-	//}
+		if ok {
+			delete(mgr.vmNs, currVm.Name)
+		}
+		mgr.vmMutex.Unlock()
+	}
+	}
 	return nil
 }
 
-// /*
-//  * This function implements the DeleteAll manager interface. It is used to clean
-//  * all the resources that are created by the pod manager.
-//  */
+/*
+ * This function implements the DeleteAll manager interface. It is used to clean
+ * all the resources that are created by the pod manager.
+ */
 func (mgr *VmManager) DeleteAll() error {
-	// if len(mgr.podNs) > 0 {
-	// 	log.Infof("Deleting all pods created by the pod manager...")
-	// 	for name, _ := range mgr.podNs {
-	// 		// Just use tid 0 so that the first client is used to delete all pods
-	// 		mgr.Delete(ActionSpec{
-	// 			Name: name,
-	// 			Tid:  0})
-	// 	}
-	// 	mgr.podNs = make(map[string]string, 0)
-	// } else {
-	// 	log.Infof("Found no pod to delete, maybe they have already been deleted.")
-	// }
-
-	// if mgr.namespace != apiv1.NamespaceDefault {
-	// 	mgr.clientsets[cid].Delete(context.Background(), mgr.namespace, metav1.DeleteOptions{})
-	// }
-
-	// // Delete other non default namespaces
-	// for ns, _ := range mgr.nsSet {
-	// 	if ns != apiv1.NamespaceDefault {
-	// 		mgr.clientsets[cid].Delete(context.Background(), ns, metav1.DeleteOptions{})
-	// 	}
-	// }
-	// mgr.nsSet = make(map[string]bool, 0)
-
-	// close(mgr.vmChan)
+	log.Info("Nedd to implement this later!!....")
 	return nil
 }
 
-// /*
-//  * This function returns whether all the created pods become ready
-//  */
+/*
+ * This function returns whether all the created pods become ready
+ */
 func (mgr *VmManager) IsStable() bool {
-	return false//len(mgr.cReadyTimes) == len(mgr.apiTimes[CREATE_ACTION])
+	return len(mgr.ReadyTimes) == len(mgr.apiTimes[CREATE_ACTION])
 }
 
-// /*
-//  * This function computes all the metrics and stores the results into the log file.
-//  */
+/*
+ * This function computes all the metrics and stores the results into the log file.
+ */
+func (mgr *VmManager) LogStats() {
+	log.Infof("------------------------------------ VM Operation Summary " +
+		"-----------------------------------")
+	log.Infof("%-50v %-10v", "Number of valid vm creation requests:",
+		len(mgr.apiTimes[CREATE_ACTION]))
+	log.Infof("%-50v %-10v", "Number of create vm:", len(mgr.creationStartedTimes))
+	log.Infof("%-50v %-10v", "Number of vms created:", len(mgr.createdTimes))
+	log.Infof("%-50v %-10v", "Number of vms got IP:", len(mgr.gotIpTimes))
+	log.Infof("%-50v %-10v", "Number of vms ready:", len(mgr.ReadyTimes))
+
+	log.Infof("%-50v %-10v", "Vm creation throughput (vms/minutes):",
+		mgr.vmThroughput)
+	log.Infof("%-50v %-10v", "Vm creation average latency:",
+		mgr.vmAvgLatency)
+
+	log.Infof("--------------------------------- Vm Startup Latencies (ms) " +
+		"---------------------------------")
+	log.Infof("%-50v %-10v %-10v %-10v %-10v", " ", "median", "min", "max", "99%")
+
+	var latency perf_util.OperationLatencyMetric
+	latency = mgr.creationToCreatedLatency
+	if latency.Valid {
+		log.Infof("%-50v %-10v %-10v %-10v %-10v",
+			"Vm creation latency stats (client): ",
+			latency.Latency.Mid, latency.Latency.Min, latency.Latency.Max, latency.Latency.P99)
+	} else {
+		log.Infof("%-50v %-10v %-10v %-10v %-10v",
+			"Vm creation latency stats (client): ",
+			"---", "---", "---", "---")
+	}
+
+	latency = mgr.createdToGotIpLatency
+	if latency.Valid {
+		log.Infof("%-50v %-10v %-10v %-10v %-10v",
+			"Vm Got IP latency stats (client): ",
+			latency.Latency.Mid, latency.Latency.Min, latency.Latency.Max, latency.Latency.P99)
+	} else {
+		log.Infof("%-50v %-10v %-10v %-10v %-10v",
+			"Vm Got IP latency stats (client): ",
+			"---", "---", "---", "---")
+	}
+
+	latency = mgr.creationToReadyLatency
+	if latency.Valid {
+		log.Infof("%-50v %-10v %-10v %-10v %-10v",
+			"Vm client e2e latency: ",
+			latency.Latency.Mid, latency.Latency.Min, latency.Latency.Max, latency.Latency.P99)
+	} else {
+		log.Infof("%-50v %-10v %-10v %-10v %-10v",
+			"Vm client e2e latency (create-to-ready): ",
+			"---", "---", "---", "---")
+	}
+
+	log.Infof("--------------------------------- Vm API Call Latencies (ms) " +
+		"--------------------------------")
+	log.Infof("%-50v %-10v %-10v %-10v %-10v", " ", "median", "min", "max", "99%")
+
+	var mid, min, max, p99 float32
+	for m, _ := range mgr.apiTimes {
+		mid = float32(mgr.apiTimes[m][len(mgr.apiTimes[m])/2]) / float32(time.Millisecond)
+		min = float32(mgr.apiTimes[m][0]) / float32(time.Millisecond)
+		max = float32(mgr.apiTimes[m][len(mgr.apiTimes[m])-1]) / float32(time.Millisecond)
+		p99 = float32(mgr.apiTimes[m][len(mgr.apiTimes[m])-1-len(mgr.apiTimes[m])/100]) /
+			float32(time.Millisecond)
+		log.Infof("%-50v %-10v %-10v %-10v %-10v", m+" Vm latency: ", mid, min, max, p99)
+	}
+
+	if mgr.createdToGotIpLatency.Latency.Mid < 0 {
+		log.Warning("There might be time skew between server and nodes, " +
+			"server side metrics such as scheduling latency stats (server) above is negative.")
+	}
+
+	// If we see negative server side results or server-client latency is larger than client latency by more than 3x
+	// if mgr.negRes || mgr.creationToReadyLatency.Latency.Mid/3 > mgr.firstToReadyLatency.Latency.Mid {
+	// 	log.Warning("There might be time skew between client and server, " +
+	// 		"and certain results (e.g., client-server e2e latency) above " +
+	// 		"may have been affected.")
+	// }
+
+}
+
 func (mgr *VmManager) GetResourceName(userVmPrefix string, opNum int, tid int) string {
 	if userVmPrefix == "" {
 		return vmNamePrefix + "oid-" + strconv.Itoa(opNum) + "-tid-" + strconv.Itoa(tid)
@@ -512,7 +451,16 @@ func (mgr *VmManager) GetResourceName(userVmPrefix string, opNum int, tid int) s
 	}
 }
 
-// // Get op num given pod name
+func (mgr *VmManager) SendMetricToWavefront(
+	now time.Time,
+	wfTags []perf_util.WavefrontTag,
+	wavefrontPathDir string,
+	prefix string) {
+
+	log.Info("Current Not Supported For VM Operations!!...")
+}
+
+// Get op num given pod name
 func (mgr *VmManager) getOpNum(name string) int {
 	//start := len(vmNamePrefix)
 	start := strings.LastIndex(name, "-oid-") + len("-oid-")
@@ -527,26 +475,108 @@ func (mgr *VmManager) getOpNum(name string) int {
 }
 
 func (mgr *VmManager) CalculateStats() {
+	latPerOp := make(map[int][]float32, 0)
+	var totalLat float32
+	totalLat = 0.0
+	vmCount := 0
 	// The below loop groups the latency by operation
+	for p, ct := range mgr.ReadyTimes {
+		opn := mgr.getOpNum(p)
+		if opn == -1 {
+			continue
+		}
+		nl := float32(ct.Time.Sub(mgr.creationStartedTimes[p].Time)) / float32(time.Second)
+		latPerOp[opn] = append(latPerOp[opn], nl)
+		totalLat += nl
+		vmCount += 1
+	}
+
+	var accStartTime float32
+	accStartTime = 0.0
+	accPods := 0
+
+	for opn, _ := range latPerOp {
+		sort.Slice(latPerOp[opn],
+			func(i, j int) bool { return latPerOp[opn][i] < latPerOp[opn][j] })
+
+		curLen := len(latPerOp[opn])
+		accStartTime += float32(latPerOp[opn][curLen/2])
+		accPods += (curLen + 1) / 2
+	}
+
+	mgr.vmAvgLatency = totalLat / float32(vmCount)
+	mgr.vmThroughput = float32(accPods) * float32(60) / accStartTime
+
+	creationToCreatedLatency := make([]time.Duration, 0)
+	createdToGotIpLatency := make([]time.Duration, 0)
+	creationToReadyLatency := make([]time.Duration, 0)
+
+	for p, ct := range mgr.creationStartedTimes {
+		if st, ok := mgr.createdTimes[p]; ok {
+			creationToCreatedLatency = append(creationToCreatedLatency, st.Time.Sub(ct.Time).
+				Round(time.Microsecond))
+		}
+	}
+	for p, ct := range mgr.createdTimes {
+		if st, ok := mgr.gotIpTimes[p]; ok {
+			createdToGotIpLatency = append(createdToGotIpLatency, st.Time.Sub(ct.Time).
+				Round(time.Microsecond))
+		}
+	}
+	for p, ct := range mgr.creationStartedTimes {
+		if st, ok := mgr.ReadyTimes[p]; ok {
+			creationToReadyLatency = append(creationToReadyLatency, st.Time.Sub(ct.Time).
+				Round(time.Microsecond))
+		}
+	}
+
+	sort.Slice(creationToCreatedLatency,
+		func(i, j int) bool { return creationToCreatedLatency[i] < creationToCreatedLatency[j] })
+	sort.Slice(createdToGotIpLatency,
+		func(i, j int) bool { return createdToGotIpLatency[i] < createdToGotIpLatency[j] })
+	sort.Slice(creationToReadyLatency,
+		func(i, j int) bool { return creationToReadyLatency[i] < creationToReadyLatency[j] })
+	
+	var mid, min, max, p99 float32
+
+	if len(creationToCreatedLatency) > 0 {
+		mid = float32(creationToCreatedLatency[len(creationToCreatedLatency)/2]) / float32(time.Millisecond)
+		min = float32(creationToCreatedLatency[0]) / float32(time.Millisecond)
+		max = float32(creationToCreatedLatency[len(creationToCreatedLatency)-1]) / float32(time.Millisecond)
+		p99 = float32(creationToCreatedLatency[len(creationToCreatedLatency)-1-len(creationToCreatedLatency)/100]) /
+			float32(time.Millisecond)
+		mgr.creationToCreatedLatency.Valid = true
+		mgr.creationToCreatedLatency.Latency = perf_util.LatencyMetric{mid, min, max, p99}
+	}
+	if len(createdToGotIpLatency) > 0 {
+		mid = float32(createdToGotIpLatency[len(createdToGotIpLatency)/2]) / float32(time.Millisecond)
+		min = float32(createdToGotIpLatency[0]) / float32(time.Millisecond)
+		max = float32(createdToGotIpLatency[len(createdToGotIpLatency)-1]) / float32(time.Millisecond)
+		p99 = float32(createdToGotIpLatency[len(createdToGotIpLatency)-1-len(createdToGotIpLatency)/100]) /
+			float32(time.Millisecond)
+		mgr.createdToGotIpLatency.Valid = true
+		mgr.createdToGotIpLatency.Latency = perf_util.LatencyMetric{mid, min, max, p99}
+	}
+	if len(creationToReadyLatency) > 0 {
+		mid = float32(creationToReadyLatency[len(creationToReadyLatency)/2]) / float32(time.Millisecond)
+		min = float32(creationToReadyLatency[0]) / float32(time.Millisecond)
+		max = float32(creationToReadyLatency[len(creationToReadyLatency)-1]) / float32(time.Millisecond)
+		p99 = float32(creationToReadyLatency[len(creationToReadyLatency)-1-len(creationToReadyLatency)/100]) /
+			float32(time.Millisecond)
+		mgr.creationToReadyLatency.Valid = true
+		mgr.creationToReadyLatency.Latency = perf_util.LatencyMetric{mid, min, max, p99}
+	}
+
+	for m, _ := range mgr.apiTimes {
+		sort.Slice(mgr.apiTimes[m],
+			func(i, j int) bool { return mgr.apiTimes[m][i] < mgr.apiTimes[m][j] })
+	}
+
 }
 
 func (mgr *VmManager) CalculateSuccessRate() int {
-	// if len(mgr.cFirstTimes) == 0 {
-	// 	return 0
-	// }
-	// return len(mgr.cReadyTimes) * 100 / len(mgr.cFirstTimes)
-	return 0
-}
-
-func (mgr *VmManager) LogStats() {
-	// log.Infof("------------------------------------ Pod Operation Summary " +
-	// 	"-----------------------------------")
-}
-
-func (mgr *VmManager) SendMetricToWavefront(
-	now time.Time,
-	wfTags []perf_util.WavefrontTag,
-	wavefrontPathDir string,
-	prefix string) {
-
+	if len(mgr.creationStartedTimes) == 0 {
+		return 0
 	}
+	return len(mgr.ReadyTimes) * 100 / len(mgr.creationStartedTimes)
+}

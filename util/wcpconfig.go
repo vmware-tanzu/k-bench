@@ -31,6 +31,13 @@ type ImageSpec struct {
 	ImagePullPolicy string // Always, IfNotPresent, or Never
 }
 
+type VirtualMachineSpecStruct struct {
+	ClassName           string
+	ImageName           string
+	StorageClass        string
+	PowerState          string
+}
+
 type FilterSpec struct {
 	LabelKey       string
 	LabelValue     string
@@ -89,6 +96,7 @@ type ActionSpec struct {
 	CopySpec
 	RunSpec
 	NumReplicas int32
+	VirtualMachineSpecStruct
 }
 
 type Action struct {

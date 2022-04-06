@@ -369,7 +369,6 @@ func (mgr *PodManager) Init(
  * This function implements the CREATE action.
  */
 func (mgr *PodManager) Create(spec interface{}) error {
-	log.Info("Create Pod called in Pod Manager.........", spec)
 
 	switch s := spec.(type) {
 	default:
