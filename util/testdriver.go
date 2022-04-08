@@ -39,7 +39,7 @@ import (
 
 const (
 	podNamespace string = "kbench-pod-namespace"
-	vmNamespace string = "ns1"
+	vmNamespace string =  "kbench-vm-namespace"
 	depNamespace string = "kbench-deployment-namespace"
 	ssNamespace  string = "kbench-statefulset-namespace"
 	svcNamespace string = "kbench-service-namespace"
@@ -49,7 +49,7 @@ const (
 
 const (
 	podType string = "kbench-pod"
-	vmType string = "kbench-vm"
+	vmType string =  "kbench-vm"
 	depType string = "kbench-deployment-pod"
 	ssType  string = "kbench-statefulset-pod"
 	rcType  string = "kbench-rc-pod"
@@ -221,7 +221,9 @@ func Run(kubeConfig *restclient.Config,
 			// Check and run if valid pod config is found
 			lastPodAction := checkAndRunPod(kubeConfig, op, opIdx, maxClients)
 
+			// Check and run if valid vm config is found
 			lastVmAction := checkAndRunVM(kubeConfig, op, opIdx, maxClients)
+
 			// Check and run if valid deployment config is found
 			lastDepAction := checkAndRunDeployment(kubeConfig, op, opIdx, maxClients)
 
@@ -266,22 +268,22 @@ func Run(kubeConfig *restclient.Config,
 				}
 
 				totalWait += waitForPodRelatedOps(mgrs, driverClient, manager.POD,
-					lastPodAction, timeout, interval, opIdx)
+					lastPodAction, timeout, interval, opIdx, kubeConfig)
 				if totalWait < timeout {
 					totalWait += waitForPodRelatedOps(mgrs, driverClient, manager.DEPLOYMENT,
-						lastDepAction, timeout, interval, opIdx)
+						lastDepAction, timeout, interval, opIdx,  kubeConfig)
 				}
 				if totalWait < timeout {
 					totalWait += waitForPodRelatedOps(mgrs, driverClient, manager.REPLICATION_CONTROLLER,
-						lastRcAction, timeout, interval, opIdx)
+						lastRcAction, timeout, interval, opIdx,  kubeConfig)
 				}
 				if totalWait < timeout {
 					totalWait += waitForPodRelatedOps(mgrs, driverClient, manager.STATEFUL_SET,
-						lastSsAction, timeout, interval, opIdx)
+						lastSsAction, timeout, interval, opIdx,  kubeConfig)
 				}
 				if totalWait < timeout {
-					totalWait += waitForPodRelatedOps(mgrs, driverClient, manager.VIRTUALMACHINE,
-						lastVmAction, timeout, interval, opIdx)
+					totalWait += waitForPodRelatedOps(mgrs, driverClient , manager.VIRTUALMACHINE,
+						lastVmAction, timeout, interval, opIdx,  kubeConfig)
 				}
 
 				if totalWait >= timeout {

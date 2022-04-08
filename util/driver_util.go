@@ -35,6 +35,7 @@ import (
 	"strings"
 	"time"
 	"github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
+	ctrlClient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func checkAndRunVM(
@@ -490,7 +491,7 @@ func runVmActions(
 	opNum int,
 	tid int) {
 
-	// Get default pod name (used when filtering not specified or applicable)
+	// Get default vm name (used when filtering not specified or applicable)
 	vmName := mgr.GetResourceName(vmConfig.VmNamePrefix, opNum, tid)
 
 	actions := vmConfig.Actions
@@ -519,7 +520,6 @@ func runVmActions(
 			}
 
 			var spec *v1alpha1.VirtualMachine
-
 			createSpec := action.Spec
 			updateLabelNs(createSpec, vmConfig.LabelKey, vmConfig.LabelValue, &ns, &lk, &lv)
 
@@ -565,7 +565,6 @@ func runVmActions(
 					spec.Labels[lk] = lv
 				}
 			}
-			log.Info("Driver Util Create VM called.........")
 			ae := mgr.ActionFuncs[manager.CREATE_ACTION](mgr, spec)
 			if ae != nil {
 				log.Error(ae)
@@ -575,8 +574,8 @@ func runVmActions(
 			updateLabelNs(lusdSpec, vmConfig.LabelKey, vmConfig.LabelValue, &ns, &lk, &lv)
 
 			as := manager.ActionSpec{
-				vmName, tid, opNum, ns, lk, lv,
-				lusdSpec.MatchGoroutine, lusdSpec.MatchOperation, manager.VIRTUALMACHINE}
+					vmName, tid, opNum, ns, lk, lv,
+					lusdSpec.MatchGoroutine, lusdSpec.MatchOperation, manager.VIRTUALMACHINE}
 			ae := actionFunc(mgr, as)
 
 			if ae != nil {
@@ -1269,7 +1268,47 @@ func runResourceActions(
 
 	wg.Done()
 }
+func waitforVmRelatedOps(
+	driverVmClient ctrlClient.Client,
+	resKind string,
+	timeout int,
+	totalWait int,
+	interval int,
+	opIdx int) {
+	vmList := v1alpha1.VirtualMachineList{}
+	for totalWait < timeout {
+		err := driverVmClient.List(context.Background(), &vmList)
+		if err != nil {
+			panic(err)
+		}
+		if len(vmList.Items) > 0 {
+			log.Infof("Not all %v have been deleted, "+
+				"%v remaining, wait for %v mili-seconds...",
+				resKind, len(vmList.Items), interval)
+			time.Sleep(time.Duration(interval) * time.Millisecond)
+			totalWait += interval
+		} else {
+			break
+		}
+	}
+	if totalWait >= timeout {
+		err := driverVmClient.List(context.Background(), &vmList)
+		if err != nil {
+			panic(err)
+		}
+		// gp := int64(0)
+		// fg := metav1.DeletePropagationForeground
+		if len(vmList.Items) > 0 {
+			log.Infof("Timed out waiting for %v deletion, "+
+				"%v remaining, force delete...",
+				resKind, len(vmList.Items))
+			// driverVmClient.CoreV1().Pods(pods.Items[0].Namespace).DeleteCollection(context.Background(), &metav1.DeleteOptions{
+			// 	GracePeriodSeconds: &gp, PropagationPolicy: &fg}, options)
+		}
+	}
 
+
+}
 // A helper function to update labels and namespace
 func waitForPodRelatedOps(
 	mgrs map[string]manager.Manager,
@@ -1278,7 +1317,8 @@ func waitForPodRelatedOps(
 	lastAction string,
 	timeout int,
 	interval int,
-	opIdx int) int {
+	opIdx int,
+	kubeConfig *restclient.Config) int {
 
 	totalWait := 0
 	var t string
@@ -1295,35 +1335,48 @@ func waitForPodRelatedOps(
 	}
 	// Wait for pod action (deletion or creation)
 	if strings.ToLower(lastAction) == manager.DELETE_ACTION {
-		// Wait for pod deletion
-		selector := labels.Set{
-			"opnum": strconv.Itoa(opIdx),
-			"type":  t,
-		}.AsSelector().String()
-		options := metav1.ListOptions{LabelSelector: selector}
-		for totalWait < timeout {
-			pods, _ := driverClient.CoreV1().Pods("").List(context.Background(), options)
+		if resKind == manager.VIRTUALMACHINE {
+			scheme := runtime.NewScheme()
+			_ = v1alpha1.AddToScheme(scheme)
 
-			if len(pods.Items) > 0 {
-				log.Infof("Not all %v have been deleted, "+
-					"%v remaining, wait for %v mili-seconds...",
-					resKind, len(pods.Items), interval)
-				time.Sleep(time.Duration(interval) * time.Millisecond)
-				totalWait += interval
-			} else {
-				break
+			driverVmClient, err := ctrlClient.New(kubeConfig, ctrlClient.Options{
+				Scheme: scheme,
+			})
+			if err != nil {
+				panic(err)
 			}
-		}
-		if totalWait >= timeout {
-			pods, _ := driverClient.CoreV1().Pods("").List(context.Background(), options)
-			// gp := int64(0)
-			// fg := metav1.DeletePropagationForeground
-			if len(pods.Items) > 0 {
-				log.Infof("Timed out waiting for %v deletion, "+
-					"%v remaining, force delete...",
-					resKind, len(pods.Items))
-				// driverClient.CoreV1().Pods(pods.Items[0].Namespace).DeleteCollection(context.Background(), &metav1.DeleteOptions{
-				// 	GracePeriodSeconds: &gp, PropagationPolicy: &fg}, options)
+			waitforVmRelatedOps(driverVmClient, resKind, timeout, totalWait, interval, opIdx)
+		} else {
+		// Wait for pod deletion
+			selector := labels.Set{
+				"opnum": strconv.Itoa(opIdx),
+				"type":  t,
+			}.AsSelector().String()
+			options := metav1.ListOptions{LabelSelector: selector}
+			for totalWait < timeout {
+				pods, _ := driverClient.CoreV1().Pods("").List(context.Background(), options)
+
+				if len(pods.Items) > 0 {
+					log.Infof("Not all %v have been deleted, "+
+						"%v remaining, wait for %v mili-seconds...",
+						resKind, len(pods.Items), interval)
+					time.Sleep(time.Duration(interval) * time.Millisecond)
+					totalWait += interval
+				} else {
+					break
+				}
+			}
+			if totalWait >= timeout {
+				pods, _ := driverClient.CoreV1().Pods("").List(context.Background(), options)
+				// gp := int64(0)
+				// fg := metav1.DeletePropagationForeground
+				if len(pods.Items) > 0 {
+					log.Infof("Timed out waiting for %v deletion, "+
+						"%v remaining, force delete...",
+						resKind, len(pods.Items))
+					// driverClient.CoreV1().Pods(pods.Items[0].Namespace).DeleteCollection(context.Background(), &metav1.DeleteOptions{
+					// 	GracePeriodSeconds: &gp, PropagationPolicy: &fg}, options)
+				}
 			}
 		}
 	} else if mgr, ok := mgrs[resKind]; ok {
