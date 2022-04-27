@@ -13,19 +13,14 @@
 							"ClassName": "best-effort-small",
 							"ImageName": "photon-3-k8s-v1.20.7---vmware.1-tkg.1.7fb9067",
 							"StorageClass": "wcp-storage-policy",
-							"PowerState": "poweredOn",
-							"NetworkInterfaces": [
-								{
-									"NetworkName": "VM Network"
-								}
-							]
+							"PowerState": "poweredOn"
 						}
 					}
 				],
 				"SleepTimes": [
 					9000
 				],
-				"Count": 1
+				"Count": 8
 			}
 		}
 	]
