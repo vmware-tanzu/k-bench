@@ -148,17 +148,16 @@ func (mgr *VmManager) initCache(resourceType string) {
 			if myvirtualmachine.Status.VmIp != "" &&  strings.Count(myvirtualmachine.Status.VmIp, ".") == 3 {
 				if _, ok := mgr.gotIpTimes[myvirtualmachine.GetName()]; !ok {
 					mgr.gotIpTimes[myvirtualmachine.GetName()] = metav1.Now()
+					log.Info("Virtual Machine got IP Address")
 				}
 				if _, ok := mgr.ReadyTimes[myvirtualmachine.GetName()]; !ok {
 					mgr.ReadyTimes[myvirtualmachine.GetName()] = metav1.Now()
 				}
-				log.Info("Virtual Machine got IP Address")
-				
 			} else if myvirtualmachine.Status.PowerState == v1alpha1.VirtualMachinePoweredOn || myvirtualmachine.Status.Phase == v1alpha1.Created {
 				if _, ok := mgr.createdTimes[myvirtualmachine.GetName()]; !ok {
 					mgr.createdTimes[myvirtualmachine.GetName()] = metav1.Now()
+					log.Info("Virtual Machine Created")
 				}
-				log.Info("Virtual Machine Created")
 			}
 		},
 	})
@@ -271,7 +270,7 @@ func (mgr *VmManager) Create(spec interface{}) error {
 		mgr.alMutex.Unlock()
 
 		mgr.vmMutex.Lock()
-		fmt.Printf("Virtual Machine name %v", vmspec.GetName())
+		fmt.Printf("Virtual Machine name %v \n", vmspec.GetName())
 		mgr.vmNs[vmspec.GetName()] = ns
 		mgr.vmMutex.Unlock()
 	}
