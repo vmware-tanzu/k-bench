@@ -11,7 +11,7 @@
 						"Act": "CREATE",
 						"Spec": {
 							"ClassName": "best-effort-small",
-							"ImageName": "photon-3-k8s-v1.20.7---vmware.1-tkg.1.7fb9067",
+							"ImageName": "ob-18186591-photon-3-k8s-v1.20.7---vmware.1-tkg.1.7fb9067",
 							"StorageClass": "wcp-storage-policy",
 							"PowerState": "poweredOn"
 						}
