@@ -35,8 +35,38 @@ import (
 	"strings"
 	"time"
 	"github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
+	v1alpha1_tkg "gitlab.eng.vmware.com/core-build/guest-cluster-controller/apis/run.tanzu/v1alpha1"
 	ctrlClient "sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+func checkAndRunTKG(
+	kubeConfig *restclient.Config,
+	op WcpOp,
+	opIdx int,
+	maxClients map[string]int) string {
+	if len(op.TanzuKubernetesCluster.Actions) > 0 {
+		var tkgMgr *manager.TkgManager
+
+		if mgr, ok := mgrs[manager.TANZUKUBERNETESCLUSTER]; ok {
+			tkgMgr = mgr.(*manager.TkgManager)
+		} else {
+			mgrs[manager.TANZUKUBERNETESCLUSTER], _ = manager.GetManager(manager.TANZUKUBERNETESCLUSTER)
+			tkgMgr = mgrs[manager.TANZUKUBERNETESCLUSTER].(*manager.TkgManager)
+			tkgMgr.Init(kubeConfig, tkgNamespace, true,
+				maxClients[manager.TANZUKUBERNETESCLUSTER], tkgType)
+		}
+
+		log.Infof("Performing TKG actions in operation %v", opIdx)
+
+		for i := 0; i < op.TanzuKubernetesCluster.Count; i++ {
+			go runTkgActions(tkgMgr, op.TanzuKubernetesCluster, opIdx, i)
+			wg.Add(1)
+		}
+
+		return op.TanzuKubernetesCluster.Actions[len(op.TanzuKubernetesCluster.Actions)-1].Act
+	}
+	return ""
+}
 
 func checkAndRunVM(
 	kubeConfig *restclient.Config,
@@ -592,6 +622,126 @@ func runVmActions(
 	}
 
 	wg.Done()
+}
+
+func runTkgActions(
+	mgr *manager.TkgManager,
+	tkgConfig TkgConfig,
+	opNum int,
+	tid int) {
+
+	// Get default vm name (used when filtering not specified or applicable)
+	tkgName := mgr.GetResourceName(tkgConfig.TkgNamePrefix, opNum, tid)
+
+	actions := tkgConfig.Actions
+
+	created := false
+
+	sleepTimes := tkgConfig.SleepTimes
+
+	si := 0
+
+	for _, action := range actions {
+		var lk, lv string
+		ns := tkgNamespace
+
+		if tkgConfig.Namespace != "" {
+			ns = tkgConfig.Namespace
+		}
+		actStr := strings.ToLower(action.Act)
+
+		if actStr == manager.CREATE_ACTION {
+			if created {
+				log.Warningf("Only one CREATE may be executed in an operation, skipped.")
+				continue
+			} else {
+				created = true
+			}
+
+			var spec *v1alpha1_tkg.TanzuKubernetesCluster
+			createSpec := action.Spec
+			updateLabelNs(createSpec, tkgConfig.LabelKey, tkgConfig.LabelValue, &ns, &lk, &lv)
+
+			// obj, derr := decodeYaml(createSpec.YamlSpec)
+			// if obj != nil && derr == nil {
+			// 	spec = obj.(*v1alpha1.TanzuKubernetesClusterSpec)
+			// 	if spec.Kind != "TanzuKubernetesCluster" {
+			// 		log.Warningf("Invalid kind specified in yaml for pod creation: %v",
+			// 			spec.Kind)
+			// 		spec = nil
+			// 	}
+			// }
+			if spec == nil {
+				as := manager.ActionSpec{tkgName, tid, opNum, ns,
+					lk, lv, true, "", manager.TANZUKUBERNETESCLUSTER}
+				spec = genTkgSpec(
+					createSpec.Topology.ControlPlane.Count, createSpec.Topology.ControlPlane.Class, createSpec.Topology.ControlPlane.StorageClass,
+					createSpec.Topology.Workers.Count, createSpec.Topology.Workers.Class, createSpec.Topology.Workers.StorageClass,
+					createSpec.Distribution.Version,
+					createSpec.Settings.Network.CNI.Name, createSpec.Settings.Network.Services.CIDRBlocks, createSpec.Settings.Network.Pods.CIDRBlocks,
+					createSpec.Settings.Network.ServiceDomain,
+					opNum, as)
+			} else {
+				//Name from yaml file are not respected to ensure integrity.
+				spec.Name = tkgName
+
+				if spec.Namespace == "" {
+					spec.Namespace = ns
+				} else {
+					ns = spec.Namespace
+				}
+				v := reflect.ValueOf(spec.Spec)
+				for i := 0; i < v.NumField(); i++ {
+					spec.Spec.topology.controlPlane = spec.Spec.topology.controlPlane.count
+					spec.Spec.topology.controlPlane.class = spec.Spec.topology.controlPlane.class
+					spec.Spec.topology.controlPlane.storageClass = spec.Spec.topology.controlPlane.storageClass
+					spec.Spec.topology.workers.count = spec.Spec.topology.workers.count
+					spec.Spec.topology.workers.class = spec.Spec.topology.workers.class
+					spec.Spec.topology.workers.storageClass	= spec.Spec.topology.workers.storageClass
+					spec.Spec.distribution.version = spec.Spec.distribution.version
+					spec.Spec.settings.network.cni.name	= spec.Spec.settings.network.cni.name
+					spec.Spec.settings.network.services.cidrBlocks = spec.Spec.settings.network.services.cidrBlocks
+					spec.Spec.settings.network.pods.cidrBlocks = spec.Spec.settings.network.pods.cidrBlocks
+					spec.Spec.settings.network.serviceDomain = spec.Spec.settings.network.serviceDomain
+				}
+
+				if spec.Labels == nil {
+					spec.Labels = make(map[string]string, 0)
+				}
+
+				updateLabels(spec.Labels, tkgType, opNum, tid)
+
+				if lk != "" && lv != "" {
+					spec.Labels[lk] = lv
+				}
+			}
+			ae := mgr.ActionFuncs[manager.CREATE_ACTION](mgr, spec)
+			if ae != nil {
+				log.Error(ae)
+			}
+		} else if actionFunc, ok := mgr.ActionFuncs[actStr]; ok {
+			lusdSpec := action.Spec
+			updateLabelNs(lusdSpec, tkgConfig.LabelKey, tkgConfig.LabelValue, &ns, &lk, &lv)
+
+			as := manager.ActionSpec{
+					tkgName, tid, opNum, ns, lk, lv,
+					lusdSpec.MatchGoroutine, lusdSpec.MatchOperation, manager.TANZUKUBERNETESCLUSTER}
+			ae := actionFunc(mgr, as)
+
+			if ae != nil {
+				log.Error(ae)
+			}
+		}
+
+		// TODO: add optional status checking logic here
+		if si < len(sleepTimes) {
+			log.Infof("Sleep %v mili-seconds after %v action", sleepTimes[si], action.Act)
+			time.Sleep(time.Duration(sleepTimes[si]) * time.Millisecond)
+			si++
+		}
+	}
+
+	//wg.Done()
 }
 
 // A function that runs a set of Deployment actions

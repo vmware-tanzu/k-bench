@@ -1,0 +1,56 @@
+{
+	"BlockingLevel": "operation",
+	"Timeout": 540000,
+	"CheckingInterval": 3000,
+	"Cleanup": false,
+	"Operations": [
+		{
+			"TanzuKubernetesClusters": {
+				"Actions": [
+					{
+						"Act": "CREATE",
+						"Spec": {
+                            "Topology": {
+                                "ControlPlane": {
+                                    "Count": 1,
+                                    "Class": "best-effort-small",
+                                    "StorageClass": "wcp-storage-policy" 
+                                },
+                                "Workers": {
+                                    "Count": 3,
+                                    "Class": "best-effort-small",
+                                    "StorageClass": "wcp-storage-policy" 
+                                }
+                            },
+                            "Distribution": {
+                                "Version": "v1.20.7---vmware.1-tkg.1.7fb9067"
+                            },
+                            "Settings": {
+                                "Network": {
+                                    "CNI": {
+                                        "Name": "calico"
+                                    },
+                                    "Services": {
+                                        "CIDRBlocks": [
+                                            "198.51.100.0/12"
+                                        ]
+                                    },
+                                    "Pods": {
+                                        "CIDRBlocks": [
+                                            "192.0.2.0/16"
+                                        ]
+                                    },
+                                    "ServiceDomain": "tanzukubernetescluster.local"
+                                }
+                            }
+						}
+					}
+				],
+				"SleepTimes": [
+					9000
+				],
+				"Count": 1
+			}
+		}
+	]
+}

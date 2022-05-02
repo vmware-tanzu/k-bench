@@ -46,6 +46,7 @@ const (
 const (
 	POD                     string = "Pod"
 	VIRTUALMACHINE          string = "VirtualMachine"
+	TANZUKUBERNETESCLUSTER  string = "TanzuKubernetesCluster"
 	DEPLOYMENT              string = "Deployment"
 	STATEFUL_SET            string = "StatefulSet"
 	REPLICATION_CONTROLLER  string = "ReplicationController"
@@ -109,14 +110,15 @@ type Manager interface {
 type NewManagerFunc func() Manager
 
 var Managers = map[string]NewManagerFunc{
-	"Pod":                   NewPodManager,
-	"VirtualMachine":		 NewVmManager,
-	"Deployment":            NewDeploymentManager,
-	"StatefulSet":           NewStatefulSetManager,
-	"Namespace":             NewNamespaceManager,
-	"Service":               NewServiceManager,
-	"ReplicationController": NewReplicationControllerManager,
-	"Resource":              NewResourceManager,
+	"Pod":                   	NewPodManager,
+	"VirtualMachine":			NewVmManager,
+	"TanzuKubernetesCluster": 	NewTkgManager,
+	"Deployment":            	NewDeploymentManager,
+	"StatefulSet":           	NewStatefulSetManager,
+	"Namespace":             	NewNamespaceManager,
+	"Service":               	NewServiceManager,
+	"ReplicationController": 	NewReplicationControllerManager,
+	"Resource":              	NewResourceManager,
 }
 
 type ActionSpec struct {
