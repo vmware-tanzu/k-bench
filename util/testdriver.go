@@ -40,6 +40,7 @@ import (
 const (
 	podNamespace string = "kbench-pod-namespace"
 	vmNamespace string =  "kbench-vm-namespace"
+	tkgNamespace string =  "kbench-tkg-namespace"
 	depNamespace string = "kbench-deployment-namespace"
 	ssNamespace  string = "kbench-statefulset-namespace"
 	svcNamespace string = "kbench-service-namespace"
@@ -50,6 +51,7 @@ const (
 const (
 	podType string = "kbench-pod"
 	vmType string =  "kbench-vm"
+	tkgType string = "kbench-tkg"
 	depType string = "kbench-deployment-pod"
 	ssType  string = "kbench-statefulset-pod"
 	rcType  string = "kbench-rc-pod"
@@ -224,6 +226,9 @@ func Run(kubeConfig *restclient.Config,
 			// Check and run if valid vm config is found
 			lastVmAction := checkAndRunVM(kubeConfig, op, opIdx, maxClients)
 
+			// Check and run if valid tkg config is found
+			lastTkgAction := checkAndRunTKG(kubeConfig, op, opIdx, maxClients)
+
 			// Check and run if valid deployment config is found
 			lastDepAction := checkAndRunDeployment(kubeConfig, op, opIdx, maxClients)
 
@@ -284,6 +289,10 @@ func Run(kubeConfig *restclient.Config,
 				if totalWait < timeout {
 					totalWait += waitForPodRelatedOps(mgrs, driverClient , manager.VIRTUALMACHINE,
 						lastVmAction, timeout, interval, opIdx,  kubeConfig)
+				}
+				if totalWait < timeout {
+					totalWait += waitForPodRelatedOps(mgrs, driverClient , manager.TANZUKUBERNETESCLUSTER,
+						lastTkgAction, timeout, interval, opIdx,  kubeConfig)
 				}
 
 				if totalWait >= timeout {
