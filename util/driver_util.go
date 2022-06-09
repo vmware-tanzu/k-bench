@@ -621,7 +621,7 @@ func runVmActions(
 		}
 	}
 
-	//wg.Done()
+	wg.Done()
 }
 
 func runTkgActions(
@@ -664,10 +664,9 @@ func runTkgActions(
 
 			// obj, derr := decodeYaml(createSpec.YamlSpec)
 			// if obj != nil && derr == nil {
-			// 	spec = obj.(*v1alpha1.TanzuKubernetesClusterSpec)
+			// 	spec = obj.(*v1alpha1_tkg.TanzuKubernetesClusterSpec)
 			// 	if spec.Kind != "TanzuKubernetesCluster" {
-			// 		log.Warningf("Invalid kind specified in yaml for pod creation: %v",
-			// 			spec.Kind)
+			// 		log.Warningf("Invalid kind specified in yaml for tkg creation: %v", spec.Kind)
 			// 		spec = nil
 			// 	}
 			// }
@@ -692,19 +691,18 @@ func runTkgActions(
 				}
 				v := reflect.ValueOf(spec.Spec)
 				for i := 0; i < v.NumField(); i++ {
-					spec.Spec.topology.controlPlane = spec.Spec.topology.controlPlane.count
-					spec.Spec.topology.controlPlane.class = spec.Spec.topology.controlPlane.class
-					spec.Spec.topology.controlPlane.storageClass = spec.Spec.topology.controlPlane.storageClass
-					spec.Spec.topology.workers.count = spec.Spec.topology.workers.count
-					spec.Spec.topology.workers.class = spec.Spec.topology.workers.class
-					spec.Spec.topology.workers.storageClass	= spec.Spec.topology.workers.storageClass
-					spec.Spec.distribution.version = spec.Spec.distribution.version
-					spec.Spec.settings.network.cni.name	= spec.Spec.settings.network.cni.name
-					spec.Spec.settings.network.services.cidrBlocks = spec.Spec.settings.network.services.cidrBlocks
-					spec.Spec.settings.network.pods.cidrBlocks = spec.Spec.settings.network.pods.cidrBlocks
-					spec.Spec.settings.network.serviceDomain = spec.Spec.settings.network.serviceDomain
+					spec.Spec.Topology.ControlPlane.Count = spec.Spec.Topology.ControlPlane.Count
+					spec.Spec.Topology.ControlPlane.Class = spec.Spec.Topology.ControlPlane.Class
+					spec.Spec.Topology.ControlPlane.StorageClass = spec.Spec.Topology.ControlPlane.StorageClass
+					spec.Spec.Topology.Workers.Count = spec.Spec.Topology.Workers.Count
+					spec.Spec.Topology.Workers.Class = spec.Spec.Topology.Workers.Class
+					spec.Spec.Topology.Workers.StorageClass	= spec.Spec.Topology.Workers.StorageClass
+					spec.Spec.Distribution.Version = spec.Spec.Distribution.Version
+					spec.Spec.Settings.Network.CNI.Name	= spec.Spec.Settings.Network.CNI.Name
+					spec.Spec.Settings.Network.Services.CIDRBlocks = spec.Spec.Settings.Network.Services.CIDRBlocks
+					spec.Spec.Settings.Network.Pods.CIDRBlocks = spec.Spec.Settings.Network.Pods.CIDRBlocks
+					spec.Spec.Settings.Network.ServiceDomain = spec.Spec.Settings.Network.ServiceDomain
 				}
-
 				if spec.Labels == nil {
 					spec.Labels = make(map[string]string, 0)
 				}
