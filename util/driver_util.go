@@ -739,7 +739,7 @@ func runTkgActions(
 		}
 	}
 
-	//wg.Done()
+	wg.Done()
 }
 
 // A function that runs a set of Deployment actions
