@@ -92,9 +92,10 @@ type PodManager struct {
 	podController cache.Controller
 	podChan       chan struct{}
 
-	podThroughput float32
-	podAvgLatency float32
-	negRes        bool
+	podThroughput    float32
+	podAvgLatency    float32
+	podSrvAvgLatency float32
+	negRes           bool
 
 	startTimestamp string
 
@@ -295,11 +296,18 @@ func (mgr *PodManager) UpdateBeforeDeletion(name string, ns string) {
 		} else {
 			scheEvents := make(map[string]metav1.Time, 0)
 			pulledEvents := make(map[string]metav1.Time, 0)
+			var eventTime metav1.Time
 			for _, event := range events.Items {
-				if event.Source.Component == apiv1.DefaultSchedulerName {
-					scheEvents[event.InvolvedObject.Name] = event.FirstTimestamp
+				if event.EventTime.IsZero() {
+					eventTime = event.FirstTimestamp
+				} else {
+					eventTime = metav1.NewTime(time.Unix(event.EventTime.Time.Unix(), 0))
+				}
+
+				if event.Source.Component == apiv1.DefaultSchedulerName || event.ReportingController == apiv1.DefaultSchedulerName {
+					scheEvents[event.InvolvedObject.Name] = eventTime
 				} else if event.Reason == "Pulled" {
-					pulledEvents[event.InvolvedObject.Name] = event.FirstTimestamp
+					pulledEvents[event.InvolvedObject.Name] = eventTime
 				}
 			}
 
@@ -307,7 +315,7 @@ func (mgr *PodManager) UpdateBeforeDeletion(name string, ns string) {
 				if _, sche_exist := scheEvents[k]; sche_exist {
 					mgr.scheduleTimes[k] = scheEvents[k]
 				}
-				if _, pull_exist := scheEvents[k]; pull_exist {
+				if _, pull_exist := pulledEvents[k]; pull_exist {
 					mgr.pulledTimes[k] = pulledEvents[k]
 				}
 			}
@@ -788,8 +796,10 @@ func (mgr *PodManager) LogStats() {
 
 	log.Infof("%-50v %-10v", "Pod creation throughput (pods/minutes):",
 		mgr.podThroughput)
-	log.Infof("%-50v %-10v", "Pod creation average latency:",
+	log.Infof("%-50v %-10v", "Pod creation (client) average latency:",
 		mgr.podAvgLatency)
+	log.Infof("%-50v %-10v", "Pod creation (server) average latency:",
+		mgr.podSrvAvgLatency)
 
 	log.Infof("--------------------------------- Pod Startup Latencies (ms) " +
 		"---------------------------------")
@@ -1100,7 +1110,9 @@ func (mgr *PodManager) getOpNum(name string) int {
 func (mgr *PodManager) CalculateStats() {
 	latPerOp := make(map[int][]float32, 0)
 	var totalLat float32
+	var totalSrvLat float32
 	totalLat = 0.0
+	totalSrvLat = 0.0
 	podCount := 0
 	// The below loop groups the latency by operation
 	for p, ct := range mgr.cReadyTimes {
@@ -1221,6 +1233,12 @@ func (mgr *PodManager) CalculateStats() {
 		func(i, j int) bool { return firstToReady[i] < firstToReady[j] })
 	sort.Slice(createToReady,
 		func(i, j int) bool { return createToReady[i] < createToReady[j] })
+
+	for _, ct := range createToRun {
+		totalSrvLat += float32(ct) / float32(time.Second)
+	}
+
+	mgr.podSrvAvgLatency = totalSrvLat / float32(podCount)
 
 	var mid, min, max, p99 float32
 
