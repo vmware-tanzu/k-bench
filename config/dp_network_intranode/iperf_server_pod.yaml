@@ -7,20 +7,22 @@ metadata:
     name: myiperf
     podtype: server
 spec:
+  volumes:
+  - name: netperfserver-volume
+    persistentVolumeClaim:
+      claimName: netperfserver-pvc
   hostname: iperfserver
   subdomain: kbench-service-oid-0-tid-0
   containers:
   - image: nginx
     resources:
-      limits:
-        memory: "4200Mi"
-        cpu: "8000m"
       requests:
-        memory: "4200Mi"
-        cpu: "1000m"
         ephemeral-storage: "5Gi"
+    volumeMounts:
+    - name: netperfserver-volume
+      mountPath: /tmp/perfoutput
     command: ["/bin/sh","-c"]
-    args: 
+    args:
       - sleep 2s;
         apt-get update;
         apt-get install -y iperf3;
@@ -32,12 +34,12 @@ spec:
         apt-get install -y wget gawk make;
         apt-get clean;
         apt-get install -y gcc libpath-tiny-perl;
-        cd /tmp; 
-        wget https://www.openfabrics.org/downloads/qperf/qperf-0.4.9.tar.gz; 
-        wget https://www.openfabrics.org/downloads/qperf/qperf-0.4.9.tar.gz; 
-        tar xvf qperf-0.4.9.tar.gz; 
-        cd qperf-0.4.9; 
-        ./configure; 
-        make; 
+        cd /tmp;
+        wget https://www.openfabrics.org/downloads/qperf/qperf-0.4.9.tar.gz;
+        wget https://www.openfabrics.org/downloads/qperf/qperf-0.4.9.tar.gz;
+        tar xvf qperf-0.4.9.tar.gz;
+        cd qperf-0.4.9;
+        ./configure;
+        make;
         sleep infinity;
     name: iperfservercontainer

@@ -7,12 +7,16 @@ metadata:
     name: mynetperf
     podtype: client
 spec:
+  volumes:
+  - name: netperfclient-volume
+    persistentVolumeClaim:
+      claimName: netperfclient-pvc
   affinity:
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
       - labelSelector:
           matchExpressions:
-          - key: podtype 
+          - key: podtype
             operator: In
             values:
             - server
@@ -23,14 +27,15 @@ spec:
   - image: gcr.io/google-containers/nginx
     resources:
       limits:
-        memory: "4200Mi"
-        cpu: "16000m"
+        memory: "2400Mi"
       requests:
-        memory: "4200Mi"
-        cpu: "1000m"
+        memory: "2400Mi"
         ephemeral-storage: "5Gi"
+    volumeMounts:
+    - name: netperfclient-volume
+      mountPath: /tmp/perfoutput
     command: ["/bin/sh","-c"]
-    args: 
+    args:
       - wget https://github.com/HewlettPackard/netperf/archive/netperf-2.7.0.tar.gz;
         tar xf netperf-2.7.0.tar.gz && cd netperf-netperf-2.7.0;
         ./configure && make && make install;

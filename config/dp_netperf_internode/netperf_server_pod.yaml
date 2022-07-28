@@ -7,20 +7,25 @@ metadata:
     name: mynetperf
     podtype: server
 spec:
+  volumes:
+  - name: netperfserver-volume
+    persistentVolumeClaim:
+      claimName: netperfserver-pvc
   hostname: netperfserver
   subdomain: kbench-service-oid-0-tid-0
   containers:
   - image: gcr.io/google-containers/nginx
     resources:
       limits:
-        memory: "4200Mi"
-        cpu: "16000m"
+        memory: "2400Mi"
       requests:
-        memory: "4200Mi"
-        cpu: "1000m"
+        memory: "2400Mi"
         ephemeral-storage: "5Gi"
+    volumeMounts:
+    - name: netperfserver-volume
+      mountPath: /tmp/perfoutput
     command: ["/bin/sh","-c"]
-    args: 
+    args:
       - wget https://github.com/HewlettPackard/netperf/archive/netperf-2.7.0.tar.gz;
         tar xf netperf-2.7.0.tar.gz && cd netperf-netperf-2.7.0;
         ./configure && make && make install;
