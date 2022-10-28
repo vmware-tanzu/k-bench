@@ -20,17 +20,21 @@ import (
 	"bytes"
 	"io/ioutil"
 	"k-bench/manager"
-	"k8s.io/client-go/dynamic"
 	"reflect"
 	"strings"
 	"sync"
 	"time"
 
+	"k8s.io/client-go/dynamic"
+
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
+
 	//"k8s.io/client-go/tools/clientcmd"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
 	"k-bench/perf_util"
 	"os"
 	"os/exec"
