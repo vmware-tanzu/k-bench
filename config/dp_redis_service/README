@@ -1,0 +1,2 @@
+Run redis service using the following command:
+cd ../../; ./run.sh -t "dp_redis_service" -r <run-tag> -o <output-dir>"
