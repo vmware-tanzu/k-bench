@@ -305,15 +305,6 @@ func decodeYaml_Crd(yamlFile string, kind string) (runtime.Object, error) {
 				return nil, err
 			}
 			return object, nil
-		} else if kind == "TanzuKubernetesCluster" {
-			_ = v1alpha1_tkg.AddToScheme(scheme)
-			decoder := serializer.NewCodecFactory(scheme).UniversalDecoder()
-			object := &v1alpha1_tkg.TanzuKubernetesCluster{}
-			err := runtime.DecodeInto(decoder, data, object)
-			if err != nil {
-				return nil, err
-			}
-			return object, nil
 		}
 	}
 	return nil, nil
