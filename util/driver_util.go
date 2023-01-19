@@ -36,38 +36,8 @@ import (
 	"strings"
 	"time"
 	"github.com/vmware-tanzu/vm-operator-api/api/v1alpha1"
-	v1alpha1_tkg "gitlab.eng.vmware.com/core-build/guest-cluster-controller/apis/run.tanzu/v1alpha1"
 	ctrlClient "sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-func checkAndRunTKG(
-	kubeConfig *restclient.Config,
-	op WcpOp,
-	opIdx int,
-	maxClients map[string]int) string {
-	if len(op.TanzuKubernetesCluster.Actions) > 0 {
-		var tkgMgr *manager.TkgManager
-
-		if mgr, ok := mgrs[manager.TANZUKUBERNETESCLUSTER]; ok {
-			tkgMgr = mgr.(*manager.TkgManager)
-		} else {
-			mgrs[manager.TANZUKUBERNETESCLUSTER], _ = manager.GetManager(manager.TANZUKUBERNETESCLUSTER)
-			tkgMgr = mgrs[manager.TANZUKUBERNETESCLUSTER].(*manager.TkgManager)
-			tkgMgr.Init(kubeConfig, tkgNamespace, true,
-				maxClients[manager.TANZUKUBERNETESCLUSTER], tkgType)
-		}
-
-		log.Infof("Performing TKG actions in operation %v", opIdx)
-
-		for i := 0; i < op.TanzuKubernetesCluster.Count; i++ {
-			go runTkgActions(tkgMgr, op.TanzuKubernetesCluster, opIdx, i)
-			wg.Add(1)
-		}
-
-		return op.TanzuKubernetesCluster.Actions[len(op.TanzuKubernetesCluster.Actions)-1].Act
-	}
-	return ""
-}
 
 func checkAndRunVM(
 	kubeConfig *restclient.Config,
@@ -658,6 +628,7 @@ func runVmActions(
 	wg.Done()
 }
 
+<<<<<<< HEAD
 func runTkgActions(
 	mgr *manager.TkgManager,
 	tkgConfig TkgConfig,
@@ -774,6 +745,8 @@ func runTkgActions(
 	wg.Done()
 }
 
+=======
+>>>>>>> parent of ee96687... Support for TKG Cluster
 // A function that runs a set of Deployment actions
 func runDeploymentActions(
 	mgr *manager.DeploymentManager,

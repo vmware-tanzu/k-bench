@@ -38,46 +38,6 @@ type VirtualMachineSpecStruct struct {
 	PowerState          string
 }
 
-type TanzuKubernetesClusterSpecStruct struct {
-	Topology		Topology
-	Distribution	Distribution
-	Settings		*Settings
-}
-
-type Topology struct {
-	ControlPlane	TopologySettings
-	Workers			TopologySettings
-}
-
-type TopologySettings struct {
-	Count			int32
-	Class			string
-	StorageClass	string
-}
-
-type Distribution struct {
-	Version string
-}
-
-type Settings struct {
-	Network	*Network
-}
-
-type Network struct {
-	Services		*NetworkRanges
-	Pods			*NetworkRanges
-	ServiceDomain	string
-	CNI				*CNIConfiguration
-}
-
-type NetworkRanges struct {
-	CIDRBlocks []string
-}
-
-type CNIConfiguration struct {
-	Name string
-}
-
 type FilterSpec struct {
 	LabelKey       string
 	LabelValue     string
@@ -137,7 +97,6 @@ type ActionSpec struct {
 	RunSpec
 	NumReplicas int32
 	VirtualMachineSpecStruct
-	TanzuKubernetesClusterSpecStruct
 }
 
 type Action struct {
@@ -204,18 +163,6 @@ type VmConfig struct {
 	FilterSpec
 }
 
-type TkgConfig struct {
-	Namespace			string
-	Topology			Topology
-	Distribution		Distribution
-	Settings			*Settings
-	Count				int      // Number of pod actions to run in parallel (concurrency)
-	Actions				[]Action // CREATE, GET, UPDATE, RUN, LIST, or DELETE
-	SleepTimes			[]int    // Sleep time in ms after each action
-	TkgNamePrefix		string   // A prefix for a set of pods in an operation
-	FilterSpec
-}
-
 type NamespaceConfig struct {
 	Count      int
 	Actions    []Action // CREATE, GET, UPDATE, LIST, or DELETE
@@ -254,32 +201,31 @@ type ResourceConfig struct {
 }
 
 type WcpOp struct {
-	Predicate             			PredicateSpec
-	Pod                   			PodConfig                   `json:"Pods"`
-	VirtualMachine        			VmConfig                    `json:"VirtualMachines"`
-	TanzuKubernetesCluster			TkgConfig                   `json:"TanzuKubernetesClusters"`
-	Deployment            			DeploymentConfig            `json:"Deployments"`
-	StatefulSet           			StatefulSetConfig           `json:"StatefulSets"`
-	Namespace             			NamespaceConfig             `json:"Namespaces"`
-	Service               			ServiceConfig               `json:"Services"`
-	ReplicationController 			ReplicationControllerConfig `json:"ReplicationControllers"`
-	ConfigMap             			ResourceConfig              `json:"ConfigMaps"`
-	Endpoints             			ResourceConfig              `json:"Endpoints"`
-	Event                 			ResourceConfig              `json:"Events"`
-	ComponentStatus       			ResourceConfig              `json:"ComponentStatuses"`
-	Node                  			ResourceConfig              `json:"Nodes"`
-	LimitRange            			ResourceConfig              `json:"LimitRanges"`
-	PersistentVolumeClaim 			ResourceConfig              `json:"PersistentVolumeClaims"`
-	PersistentVolume      			ResourceConfig              `json:"PersistentVolumes"`
-	PodTemplate           			ResourceConfig              `json:"PodTemplates"`
-	ResourceQuota         			ResourceConfig              `json:"ResourceQuotas"`
-	Secret                			ResourceConfig              `json:"Secrets"`
-	ServiceAccount        			ResourceConfig              `json:"ServiceAccounts"`
-	Role                  			ResourceConfig              `json:"Roles"`
-	RoleBinding           			ResourceConfig              `json:"RoleBindings"`
-	ClusterRole           			ResourceConfig              `json:"ClusterRoles"`
-	ClusterRoleBinding    			ResourceConfig              `json:"ClusterRoleBindings"`
-	RepeatTimes           			int
+	Predicate             PredicateSpec
+	Pod                   PodConfig                   `json:"Pods"`
+	VirtualMachine        VmConfig                    `json:"VirtualMachines"`
+	Deployment            DeploymentConfig            `json:"Deployments"`
+	StatefulSet           StatefulSetConfig           `json:"StatefulSets"`
+	Namespace             NamespaceConfig             `json:"Namespaces"`
+	Service               ServiceConfig               `json:"Services"`
+	ReplicationController ReplicationControllerConfig `json:"ReplicationControllers"`
+	ConfigMap             ResourceConfig              `json:"ConfigMaps"`
+	Endpoints             ResourceConfig              `json:"Endpoints"`
+	Event                 ResourceConfig              `json:"Events"`
+	ComponentStatus       ResourceConfig              `json:"ComponentStatuses"`
+	Node                  ResourceConfig              `json:"Nodes"`
+	LimitRange            ResourceConfig              `json:"LimitRanges"`
+	PersistentVolumeClaim ResourceConfig              `json:"PersistentVolumeClaims"`
+	PersistentVolume      ResourceConfig              `json:"PersistentVolumes"`
+	PodTemplate           ResourceConfig              `json:"PodTemplates"`
+	ResourceQuota         ResourceConfig              `json:"ResourceQuotas"`
+	Secret                ResourceConfig              `json:"Secrets"`
+	ServiceAccount        ResourceConfig              `json:"ServiceAccounts"`
+	Role                  ResourceConfig              `json:"Roles"`
+	RoleBinding           ResourceConfig              `json:"RoleBindings"`
+	ClusterRole           ResourceConfig              `json:"ClusterRoles"`
+	ClusterRoleBinding    ResourceConfig              `json:"ClusterRoleBindings"`
+	RepeatTimes           int
 }
 
 // This is used by reflect mechanism to distinguish resource configs vs other options in WcpOp
