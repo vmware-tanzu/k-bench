@@ -742,7 +742,7 @@ func runTkgActions(
 		}
 	}
 
-	wg.Done()
+	//wg.Done()
 }
 
 =======
