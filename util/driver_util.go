@@ -625,7 +625,7 @@ func runVmActions(
 		}
 	}
 
-	wg.Done()
+	//wg.Done()
 }
 
 <<<<<<< HEAD
@@ -667,6 +667,7 @@ func runTkgActions(
 			createSpec := action.Spec
 			updateLabelNs(createSpec, tkgConfig.LabelKey, tkgConfig.LabelValue, &ns, &lk, &lv)
 
+<<<<<<< HEAD
 			obj, derr := decodeYaml_Crd(createSpec.YamlSpec,"TanzuKubernetesCluster")
 			if obj != nil && derr == nil {
 				spec = obj.(*v1alpha1_tkg.TanzuKubernetesCluster)
@@ -675,6 +676,17 @@ func runTkgActions(
 					spec = nil
 				}
 			}
+=======
+			// obj, derr := decodeYaml(createSpec.YamlSpec)
+			// if obj != nil && derr == nil {
+			// 	spec = obj.(*v1alpha1.TanzuKubernetesClusterSpec)
+			// 	if spec.Kind != "TanzuKubernetesCluster" {
+			// 		log.Warningf("Invalid kind specified in yaml for pod creation: %v",
+			// 			spec.Kind)
+			// 		spec = nil
+			// 	}
+			// }
+>>>>>>> parent of 74c457b... Minor change
 			if spec == nil {
 				as := manager.ActionSpec{tkgName, tid, opNum, ns,
 					lk, lv, true, "", manager.TANZUKUBERNETESCLUSTER}
@@ -694,6 +706,7 @@ func runTkgActions(
 				} else {
 					ns = spec.Namespace
 				}
+<<<<<<< HEAD
 				spec.Spec.Topology.ControlPlane.Count = spec.Spec.Topology.ControlPlane.Count
 				spec.Spec.Topology.ControlPlane.Class = spec.Spec.Topology.ControlPlane.Class
 				spec.Spec.Topology.ControlPlane.StorageClass = spec.Spec.Topology.ControlPlane.StorageClass
@@ -705,6 +718,22 @@ func runTkgActions(
 				spec.Spec.Settings.Network.Services.CIDRBlocks = spec.Spec.Settings.Network.Services.CIDRBlocks
 				spec.Spec.Settings.Network.Pods.CIDRBlocks = spec.Spec.Settings.Network.Pods.CIDRBlocks
 				spec.Spec.Settings.Network.ServiceDomain = spec.Spec.Settings.Network.ServiceDomain
+=======
+				v := reflect.ValueOf(spec.Spec)
+				for i := 0; i < v.NumField(); i++ {
+					spec.Spec.topology.controlPlane = spec.Spec.topology.controlPlane.count
+					spec.Spec.topology.controlPlane.class = spec.Spec.topology.controlPlane.class
+					spec.Spec.topology.controlPlane.storageClass = spec.Spec.topology.controlPlane.storageClass
+					spec.Spec.topology.workers.count = spec.Spec.topology.workers.count
+					spec.Spec.topology.workers.class = spec.Spec.topology.workers.class
+					spec.Spec.topology.workers.storageClass	= spec.Spec.topology.workers.storageClass
+					spec.Spec.distribution.version = spec.Spec.distribution.version
+					spec.Spec.settings.network.cni.name	= spec.Spec.settings.network.cni.name
+					spec.Spec.settings.network.services.cidrBlocks = spec.Spec.settings.network.services.cidrBlocks
+					spec.Spec.settings.network.pods.cidrBlocks = spec.Spec.settings.network.pods.cidrBlocks
+					spec.Spec.settings.network.serviceDomain = spec.Spec.settings.network.serviceDomain
+				}
+>>>>>>> parent of 74c457b... Minor change
 
 				if spec.Labels == nil {
 					spec.Labels = make(map[string]string, 0)

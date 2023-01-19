@@ -17,7 +17,7 @@
                                     "StorageClass": "wcp-storage-policy" 
                                 },
                                 "Workers": {
-                                    "Count": 5,
+                                    "Count": 3,
                                     "Class": "best-effort-small",
                                     "StorageClass": "wcp-storage-policy" 
                                 }
