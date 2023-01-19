@@ -1,6 +1,6 @@
 #!/bin/bash
 
-GOVERSION="1.13.7"
+GOVERSION="1.17.6"
 MY_GOPATH="$HOME/go"
 MY_GOROOT="$HOME/go-root/go"
 
