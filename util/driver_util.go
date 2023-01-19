@@ -1489,46 +1489,6 @@ func waitforVmRelatedOps(
 
 
 }
-func waitforTkgRelatedOps(
-	driverTkgClient ctrlClient.Client,
-	resKind string,
-	timeout int,
-	totalWait int,
-	interval int,
-	opIdx int) {
-	tkgList := v1alpha1_tkg.TanzuKubernetesClusterList{}
-	for totalWait < timeout {
-		err := driverTkgClient.List(context.Background(), &tkgList)
-		if err != nil {
-			panic(err)
-		}
-		if len(tkgList.Items) > 0 {
-			log.Infof("Not all %v have been deleted, "+
-				"%v remaining, wait for %v mili-seconds...",
-				resKind, len(tkgList.Items), interval)
-			time.Sleep(time.Duration(interval) * time.Millisecond)
-			totalWait += interval
-		} else {
-			break
-		}
-	}
-	if totalWait >= timeout {
-		err := driverTkgClient.List(context.Background(), &tkgList)
-		if err != nil {
-			panic(err)
-		}
-		// gp := int64(0)
-		// fg := metav1.DeletePropagationForeground
-		if len(tkgList.Items) > 0 {
-			log.Infof("Timed out waiting for %v deletion, "+
-				"%v remaining, force delete...",
-				resKind, len(tkgList.Items))
-			// driverVmClient.CoreV1().Pods(pods.Items[0].Namespace).DeleteCollection(context.Background(), &metav1.DeleteOptions{
-			// 	GracePeriodSeconds: &gp, PropagationPolicy: &fg}, options)
-		}
-	}
-}
-
 // A helper function to update labels and namespace
 func waitForPodRelatedOps(
 	mgrs map[string]manager.Manager,
@@ -1552,8 +1512,6 @@ func waitForPodRelatedOps(
 		t = ssType
 	} else if resKind == manager.VIRTUALMACHINE {
 		t = vmType
-	} else if resKind == manager.TANZUKUBERNETESCLUSTER {
-		t = tkgType
 	}
 	// Wait for pod action (deletion or creation)
 	if strings.ToLower(lastAction) == manager.DELETE_ACTION {
@@ -1568,17 +1526,6 @@ func waitForPodRelatedOps(
 				panic(err)
 			}
 			waitforVmRelatedOps(driverVmClient, resKind, timeout, totalWait, interval, opIdx)
-		} else if resKind == manager.TANZUKUBERNETESCLUSTER {
-			scheme := runtime.NewScheme()
-			_ = v1alpha1_tkg.AddToScheme(scheme)
-
-			driverTkgClient, err := ctrlClient.New(kubeConfig, ctrlClient.Options{
-				Scheme: scheme,
-			})
-			if err != nil {
-				panic(err)
-			}
-			waitforTkgRelatedOps(driverTkgClient, resKind, timeout, totalWait, interval, opIdx)
 		} else {
 		// Wait for pod deletion
 			selector := labels.Set{
@@ -1633,9 +1580,6 @@ func waitForPodRelatedOps(
 				} else if resKind == manager.VIRTUALMACHINE {
 					vmMgr := mgr.(*manager.VmManager)
 					stable = vmMgr.IsStable()
-				} else if resKind == manager.TANZUKUBERNETESCLUSTER {
-					tkgMgr := mgr.(*manager.TkgManager)
-					stable = tkgMgr.IsStable()
 				}
 				if !stable {
 					log.Infof("Not all %v are running, wait for %v mili-seconds...",
