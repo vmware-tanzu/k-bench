@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    component: cache
+    name: redis
+  name: redis
+  namespace: kbench-pod-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: redis
+  template:
+    metadata:
+      labels:
+        component: cache
+        name: redis
+        app: redis
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - redis
+              topologyKey: "kubernetes.io/hostname"
+      containers:
+      - args:
+        env:
+        - name: MASTER
+          value: "true"
+        image: gcr.io/google-containers/redis
+        imagePullPolicy: Always
+        name: redis
+        ports:
+        - containerPort: 6379
+          name: redis
+        resources:
+          limits:
+            memory: "12000Mi"
+            cpu: "8000m"
+          requests:
+            memory: "4000Mi"
+            cpu: "2000m"

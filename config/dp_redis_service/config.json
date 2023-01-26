@@ -1,0 +1,121 @@
+{
+"BlockingLevel": "operation",
+"Timeout": 60000,
+"CheckingInterval": 3000,
+"Cleanup": false,
+"Operations" : [
+  {
+	"Deployments":
+	{
+		"Actions": [
+                       {
+                               "Act": "CREATE",
+                               "Spec": {
+				        "YamlSpec": "./config/dp_redis_service/redis_deployment.yaml"
+				}
+			}
+                ],
+                "SleepTimes": [50000],
+                "Count": 1
+	}
+  },
+  {
+       "Pods":
+       {
+		"Actions": [
+                       {
+                               "Act": "CREATE",
+                               "Spec": {
+					"PodNamePrefix": "client",
+					"LabelKey": "podtype",
+                                        "LabelValue": "redisworker",
+				        "YamlSpec": "./config/dp_redis_service/redis_client_pod.yaml"
+				}
+                       }
+                ],
+                "SleepTimes": [100000],
+                "Count": 1
+       }
+  },
+  {
+        "Services":
+        {
+                "Actions": [
+                        {
+                                "Act": "CREATE",
+                                "Spec": {
+                                        "YamlSpec": "./config/dp_redis_service/redis_service.yaml"
+                                }
+                        }
+                ],
+                "SleepTimes": [10000],
+                "Count": 1
+        }
+  },
+  {
+        "Pods":
+        {
+		"Actions": [
+                       {
+                               "Act": "RUN",
+                               "Spec": {
+                                        "Namespace": "kbench-pod-namespace",
+                                        "LabelKey": "podtype",
+                                        "LabelValue": "redisworker",
+                                        "MatchGoroutine": true,
+                                        "Command": "mkdir /tmp/redisoutput; ping -c 10 kbench-service-oid-2-tid-0.kbench-pod-namespace.svc.cluster.local > /tmp/redisoutput/ping.out 2> /tmp/redisoutput/ping.err; cd /etc/nginx/memtier_benchmark; ./memtier_benchmark -s kbench-service-oid-2-tid-0.kbench-pod-namespace.svc.cluster.local --ratio=1:0 --hide-histogram --key-pattern P:P --key-minimum=100000 --key-maximum=200000 -n allkeys --data-size=10 > /tmp/redisoutput/memtier-warmup.out 2> /tmp/redisoutput/memtier-warmup.err"
+                                }
+                       }
+                ],
+                "SleepTimes": [10000],
+                "Count": 1
+        }
+  },
+  {
+        "Pods":
+        {
+                "Actions": [
+                       {
+                               "Act": "RUN",
+                               "Spec": {
+                                        "Namespace": "kbench-pod-namespace",
+                                        "LabelKey": "podtype",
+                                        "LabelValue": "redisworker",
+                                        "MatchGoroutine": true,
+                                        "Command": "cd /etc/nginx/memtier_benchmark; ./memtier_benchmark -s kbench-service-oid-2-tid-0.kbench-pod-namespace.svc.cluster.local --ratio=10:90 --threads=5 --test-time=300 --key-minimum=100000 --key-maximum=200000 --pipeline=5 -c 20 --hide-histogram -x 1 --key-pattern R:R --distinct-client-seed --data-size=10  > /tmp/redisoutput/memtier.out 2> /tmp/redisoutput/memtier.err;"
+                                }
+                       }
+                ],
+                "SleepTimes": [10000],
+                "Count": 1
+        }
+  },
+  {
+        "Pods":
+        {
+                "Actions": [
+                        {
+                                "Act": "COPY",
+                                "Spec": {
+                                        "Namespace": "kbench-pod-namespace",
+                                        "LocalPath": "./",
+                                        "ContainerPath": "/tmp/redisoutput",
+                                        "Upload": false,
+                                        "MatchOperation": "ALL",
+                                        "MatchGoroutine": false
+                                }
+                        }
+                 ],
+                 "SleepTimes": [20000],
+                 "Count": 1
+        }
+  }
+],
+"Tags" : [
+	{
+		"Key": "testProfile",
+		"Value": "redis"
+	}
+],
+"WavefrontPathDir": "/home/vmware"
+}

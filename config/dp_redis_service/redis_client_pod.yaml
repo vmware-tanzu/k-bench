@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myredispod
+  namespace: kbench-pod-namespace
+  labels:
+    name: myredisserverclient
+    app: redis
+spec:
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - redis
+          topologyKey: "kubernetes.io/hostname"
+  containers:
+  - image: gcr.io/google-containers/nginx
+    resources:
+      limits:
+        memory: "12000Mi"
+        cpu: "8000m"
+      requests:
+        memory: "4000Mi"
+        cpu: "2000m"
+        ephemeral-storage: "10Gi"
+    command: ["/bin/sh","-c"]
+    args:
+      - apt-get update;
+        apt-get install -y redis-server;
+        apt-get install -y git libssl-dev build-essential autoconf automake libpcre3-dev libevent-dev pkg-config zlib1g-dev;
+        git clone https://github.com/RedisLabs/memtier_benchmark.git;
+        cd memtier_benchmark/;
+        autoreconf -ivf;
+        ./configure;
+        make;
+        sleep infinity;
+    name: rediscontainer
