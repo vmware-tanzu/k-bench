@@ -17,4 +17,6 @@ require (
 	k8s.io/client-go v0.17.0
 	k8s.io/utils v0.0.0-20200124190032-861946025e34 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
+	golang.org/x/crypto v0.0.0-20220314234659-1baeb1ce4c0b
+	golang.org/x/net v0.7.0
 )
