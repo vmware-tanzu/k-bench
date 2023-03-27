@@ -19,6 +19,7 @@ package manager
 import (
 	"fmt"
 	"sort"
+	"context"
 	"strconv"
 	"strings"
 	"sync"
@@ -125,7 +126,7 @@ func (mgr *ServiceManager) Init(
 
 	if createNamespace {
 		nsSpec := &apiv1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: nsName}}
-		_, ne := mgr.client.CoreV1().Namespaces().Create(nsSpec)
+		_, ne := mgr.client.CoreV1().Namespaces().Create(context.Background(), nsSpec, metav1.CreateOptions{})
 		if ne != nil {
 			log.Warningf("Fail to create namespace %s, %v", nsName, ne)
 		}
@@ -151,7 +152,7 @@ func (mgr *ServiceManager) Create(spec interface{}) error {
 			mgr.svcMutex.Lock()
 			if _, exist := mgr.nsSet[ns]; !exist && ns != apiv1.NamespaceDefault {
 				nsSpec := &apiv1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}
-				_, err := mgr.client.CoreV1().Namespaces().Create(nsSpec)
+				_, err := mgr.client.CoreV1().Namespaces().Create(context.Background(), nsSpec, metav1.CreateOptions{})
 				mgr.nsSet[ns] = true
 				if err != nil {
 					if strings.Contains(err.Error(), "already exists") {
@@ -167,7 +168,7 @@ func (mgr *ServiceManager) Create(spec interface{}) error {
 		}
 
 		startTime := metav1.Now()
-		_, err := mgr.clientsets[cid].CoreV1().Services(ns).Create(s)
+		_, err := mgr.clientsets[cid].CoreV1().Services(ns).Create(context.Background(), s, metav1.CreateOptions{})
 
 		latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
@@ -207,7 +208,7 @@ func (mgr *ServiceManager) List(n interface{}) error {
 		}
 
 		startTime := metav1.Now()
-		ss, err := mgr.clientsets[cid].CoreV1().Services(ns).List(options)
+		ss, err := mgr.clientsets[cid].CoreV1().Services(ns).List(context.Background(), options)
 		latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
 		if err != nil {
@@ -241,7 +242,7 @@ func (mgr *ServiceManager) Get(n interface{}) error {
 
 		startTime := metav1.Now()
 		ss, err := mgr.clientsets[cid].CoreV1().Services(ns).
-			Get(s.Name, metav1.GetOptions{})
+			Get(context.Background(), s.Name, metav1.GetOptions{})
 		latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
 		if err != nil {
@@ -276,7 +277,7 @@ func (mgr *ServiceManager) Update(n interface{}) error {
 			ns = s.Namespace
 		}
 
-		svcList, err := mgr.clientsets[cid].CoreV1().Services(ns).List(options)
+		svcList, err := mgr.clientsets[cid].CoreV1().Services(ns).List(context.Background(), options)
 		if err != nil {
 			return err
 		}
@@ -286,7 +287,7 @@ func (mgr *ServiceManager) Update(n interface{}) error {
 			currSs.Spec.SessionAffinity = apiv1.ServiceAffinityClientIP
 
 			startTime := metav1.Now()
-			svc, err := mgr.clientsets[cid].CoreV1().Services(ns).Update(&currSs)
+			svc, err := mgr.clientsets[cid].CoreV1().Services(ns).Update(context.Background(), &currSs, metav1.UpdateOptions{})
 			latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
 			if err != nil {
@@ -319,7 +320,7 @@ func (mgr *ServiceManager) Delete(n interface{}) error {
 		}
 
 		options := GetListOptions(s)
-		svcList, err := mgr.clientsets[cid].CoreV1().Services(ns).List(options)
+		svcList, err := mgr.clientsets[cid].CoreV1().Services(ns).List(context.Background(), options)
 		if err != nil {
 			return err
 		}
@@ -329,7 +330,7 @@ func (mgr *ServiceManager) Delete(n interface{}) error {
 			// Delete the service
 			log.Infof("Deleting service %v", currSs.Name)
 			startTime := metav1.Now()
-			mgr.clientsets[cid].CoreV1().Services(ns).Delete(currSs.Name, nil)
+			mgr.clientsets[cid].CoreV1().Services(ns).Delete(context.Background(), currSs.Name, metav1.DeleteOptions{})
 
 			latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
@@ -358,7 +359,7 @@ func (mgr *ServiceManager) DeleteAll() error {
 
 	options := metav1.ListOptions{LabelSelector: labels.SelectorFromSet(
 		labels.Set{"app": AppName}).String()}
-	ss, err := mgr.client.CoreV1().Services("").List(options)
+	ss, err := mgr.client.CoreV1().Services("").List(context.Background(), options)
 
 	if err != nil {
 		return err
@@ -377,13 +378,13 @@ func (mgr *ServiceManager) DeleteAll() error {
 	}
 
 	if mgr.namespace != apiv1.NamespaceDefault {
-		mgr.client.CoreV1().Namespaces().Delete(mgr.namespace, nil)
+		mgr.client.CoreV1().Namespaces().Delete(context.Background(), mgr.namespace, metav1.DeleteOptions{})
 	}
 
 	// Delete other non default namespaces
 	for ns, _ := range mgr.nsSet {
 		if ns != apiv1.NamespaceDefault {
-			mgr.client.CoreV1().Namespaces().Delete(ns, nil)
+			mgr.client.CoreV1().Namespaces().Delete(context.Background(), ns, metav1.DeleteOptions{})
 		}
 	}
 	mgr.nsSet = make(map[string]bool, 0)
