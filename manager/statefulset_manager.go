@@ -19,6 +19,7 @@ package manager
 import (
 	"sort"
 	"strconv"
+	"context"
 	//"strings"
 	"fmt"
 	"strings"
@@ -136,7 +137,7 @@ func (mgr *StatefulSetManager) Init(
 	}
 
 	nsSpec := &apiv1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: nsName}}
-	_, cerr := mgr.client.CoreV1().Namespaces().Create(nsSpec)
+	_, cerr := mgr.client.CoreV1().Namespaces().Create(context.Background(), nsSpec, metav1.CreateOptions{})
 	if cerr != nil {
 		log.Warningf("Fail to create namespace %s, %v", nsName, err)
 	} else {
@@ -164,7 +165,7 @@ func (mgr *StatefulSetManager) Create(spec interface{}) error {
 			mgr.ssMutex.Lock()
 			if _, exist := mgr.nsSet[ns]; !exist && ns != apiv1.NamespaceDefault {
 				nsSpec := &apiv1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}
-				_, err := mgr.client.CoreV1().Namespaces().Create(nsSpec)
+				_, err := mgr.client.CoreV1().Namespaces().Create(context.Background(), nsSpec, metav1.CreateOptions{})
 				mgr.nsSet[ns] = true
 				if err != nil {
 					if strings.Contains(err.Error(), "already exists") {
@@ -180,7 +181,7 @@ func (mgr *StatefulSetManager) Create(spec interface{}) error {
 		}
 
 		startTime := metav1.Now()
-		ss, err := mgr.clientsets[cid].AppsV1().StatefulSets(ns).Create(s)
+		ss, err := mgr.clientsets[cid].AppsV1().StatefulSets(ns).Create(context.Background(), s, metav1.CreateOptions{})
 
 		latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
@@ -219,7 +220,7 @@ func (mgr *StatefulSetManager) List(n interface{}) error {
 		}
 
 		startTime := metav1.Now()
-		sss, err := mgr.clientsets[cid].AppsV1().StatefulSets(ns).List(options)
+		sss, err := mgr.clientsets[cid].AppsV1().StatefulSets(ns).List(context.Background(), options)
 		latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
 		if err != nil {
@@ -253,7 +254,7 @@ func (mgr *StatefulSetManager) Get(n interface{}) error {
 
 		startTime := metav1.Now()
 		ss, err := mgr.clientsets[cid].AppsV1().StatefulSets(ns).
-			Get(s.Name, metav1.GetOptions{})
+			Get(context.Background(), s.Name, metav1.GetOptions{})
 		latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
 		if err != nil {
@@ -290,7 +291,7 @@ func (mgr *StatefulSetManager) Update(n interface{}) error {
 
 		sss := make([]appsv1.StatefulSet, 0)
 
-		ssList, err := mgr.clientsets[cid].AppsV1().StatefulSets(ns).List(options)
+		ssList, err := mgr.clientsets[cid].AppsV1().StatefulSets(ns).List(context.Background(), options)
 		if err != nil {
 			return err
 		}
@@ -301,7 +302,7 @@ func (mgr *StatefulSetManager) Update(n interface{}) error {
 			currSs.Spec.RevisionHistoryLimit = &newRhl
 
 			startTime := metav1.Now()
-			ss, err := mgr.clientsets[cid].AppsV1().StatefulSets(ns).Update(&currSs)
+			ss, err := mgr.clientsets[cid].AppsV1().StatefulSets(ns).Update(context.Background(), &currSs, metav1.UpdateOptions{})
 			latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
 			if err != nil {
@@ -338,7 +339,7 @@ func (mgr *StatefulSetManager) Scale(n interface{}) error {
 
 		sss := make([]appsv1.StatefulSet, 0)
 
-		ssList, err := mgr.clientsets[cid].AppsV1().StatefulSets(ns).List(options)
+		ssList, err := mgr.clientsets[cid].AppsV1().StatefulSets(ns).List(context.Background(), options)
 		if err != nil {
 			return err
 		}
@@ -346,7 +347,7 @@ func (mgr *StatefulSetManager) Scale(n interface{}) error {
 
 		for _, currSs := range sss {
 			scale, ge := mgr.clientsets[cid].AppsV1().StatefulSets(ns).GetScale(
-				currSs.Name, metav1.GetOptions{})
+				context.Background(), currSs.Name, metav1.GetOptions{})
 			if ge != nil {
 				return ge
 			}
@@ -355,7 +356,7 @@ func (mgr *StatefulSetManager) Scale(n interface{}) error {
 
 			startTime := metav1.Now()
 			_, err := mgr.clientsets[cid].AppsV1().StatefulSets(ns).UpdateScale(
-				currSs.Name, scale)
+				context.Background(), currSs.Name, scale, metav1.UpdateOptions{})
 			latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
 			if err != nil {
@@ -392,7 +393,7 @@ func (mgr *StatefulSetManager) Delete(n interface{}) error {
 			"metadata.namespace": ns,
 		}.AsSelector().String()
 		podOptions := metav1.ListOptions{FieldSelector: selector}
-		pods, err := mgr.clientsets[cid].CoreV1().Pods(ns).List(podOptions)
+		pods, err := mgr.clientsets[cid].CoreV1().Pods(ns).List(context.Background(), podOptions)
 
 		if err != nil {
 			return err
@@ -413,7 +414,7 @@ func (mgr *StatefulSetManager) Delete(n interface{}) error {
 		sss := make([]appsv1.StatefulSet, 0)
 
 		options := GetListOptions(s)
-		ssList, err := mgr.clientsets[cid].AppsV1().StatefulSets(ns).List(options)
+		ssList, err := mgr.clientsets[cid].AppsV1().StatefulSets(ns).List(context.Background(), options)
 		if err != nil {
 			return err
 		}
@@ -423,7 +424,7 @@ func (mgr *StatefulSetManager) Delete(n interface{}) error {
 			// Delete the statefulset
 			log.Infof("Deleting statefulset %v", currSs.Name)
 			startTime := metav1.Now()
-			mgr.clientsets[cid].AppsV1().StatefulSets(ns).Delete(currSs.Name, nil)
+			mgr.clientsets[cid].AppsV1().StatefulSets(ns).Delete(context.Background(), currSs.Name, metav1.DeleteOptions{})
 
 			latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
@@ -465,13 +466,13 @@ func (mgr *StatefulSetManager) DeleteAll() error {
 	}
 
 	if mgr.namespace != apiv1.NamespaceDefault {
-		mgr.client.CoreV1().Namespaces().Delete(mgr.namespace, nil)
+		mgr.client.CoreV1().Namespaces().Delete(context.Background(), mgr.namespace, metav1.DeleteOptions{})
 	}
 
 	// Delete other non default namespaces
 	for ns, _ := range mgr.nsSet {
 		if ns != apiv1.NamespaceDefault {
-			mgr.client.CoreV1().Namespaces().Delete(ns, nil)
+			mgr.client.CoreV1().Namespaces().Delete(context.Background(), ns, metav1.DeleteOptions{})
 		}
 	}
 	mgr.nsSet = make(map[string]bool, 0)

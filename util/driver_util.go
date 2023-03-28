@@ -19,6 +19,7 @@ package util
 import (
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
+	"context"
 	"k-bench/manager"
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
@@ -1158,7 +1159,7 @@ func waitForPodRelatedOps(
 		}.AsSelector().String()
 		options := metav1.ListOptions{LabelSelector: selector}
 		for totalWait < timeout {
-			pods, _ := driverClient.CoreV1().Pods("").List(options)
+			pods, _ := driverClient.CoreV1().Pods("").List(context.Background(), options)
 
 			if len(pods.Items) > 0 {
 				log.Infof("Not all %v have been deleted, "+
@@ -1171,15 +1172,14 @@ func waitForPodRelatedOps(
 			}
 		}
 		if totalWait >= timeout {
-			pods, _ := driverClient.CoreV1().Pods("").List(options)
+			pods, _ := driverClient.CoreV1().Pods("").List(context.Background(), options)
 			gp := int64(0)
 			fg := metav1.DeletePropagationForeground
 			if len(pods.Items) > 0 {
 				log.Infof("Timed out waiting for %v deletion, "+
 					"%v remaining, force delete...",
 					resKind, len(pods.Items))
-				driverClient.CoreV1().Pods(pods.Items[0].Namespace).DeleteCollection(&metav1.DeleteOptions{
-					GracePeriodSeconds: &gp, PropagationPolicy: &fg}, options)
+				driverClient.CoreV1().Pods(pods.Items[0].Namespace).DeleteCollection(context.Background(), metav1.DeleteOptions{GracePeriodSeconds: &gp, PropagationPolicy: &fg}, options)
 			}
 		}
 	} else if mgr, ok := mgrs[resKind]; ok {

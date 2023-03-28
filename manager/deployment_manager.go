@@ -19,6 +19,7 @@ package manager
 import (
 	"sort"
 	"strconv"
+	"context"
 	//"strings"
 	"fmt"
 	"strings"
@@ -135,7 +136,7 @@ func (mgr *DeploymentManager) Init(
 	}
 
 	nsSpec := &apiv1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: nsName}}
-	_, cerr := mgr.client.CoreV1().Namespaces().Create(nsSpec)
+	_, cerr := mgr.client.CoreV1().Namespaces().Create(context.Background(), nsSpec, metav1.CreateOptions{})
 	if cerr != nil {
 		log.Warningf("Fail to create namespace %s, %v", nsName, err)
 	} else {
@@ -163,7 +164,7 @@ func (mgr *DeploymentManager) Create(spec interface{}) error {
 			mgr.depMutex.Lock()
 			if _, exist := mgr.nsSet[ns]; !exist && ns != apiv1.NamespaceDefault {
 				nsSpec := &apiv1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}
-				_, err := mgr.client.CoreV1().Namespaces().Create(nsSpec)
+				_, err := mgr.client.CoreV1().Namespaces().Create(context.Background(), nsSpec, metav1.CreateOptions{})
 				mgr.nsSet[ns] = true
 				if err != nil {
 					if strings.Contains(err.Error(), "already exists") {
@@ -179,7 +180,7 @@ func (mgr *DeploymentManager) Create(spec interface{}) error {
 		}
 
 		startTime := metav1.Now()
-		dep, err := mgr.clientsets[cid].AppsV1().Deployments(ns).Create(s)
+		dep, err := mgr.clientsets[cid].AppsV1().Deployments(ns).Create(context.Background(), s, metav1.CreateOptions{})
 
 		latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
@@ -218,7 +219,7 @@ func (mgr *DeploymentManager) List(n interface{}) error {
 		}
 
 		startTime := metav1.Now()
-		deps, err := mgr.clientsets[cid].AppsV1().Deployments(ns).List(options)
+		deps, err := mgr.clientsets[cid].AppsV1().Deployments(ns).List(context.Background(), options)
 		latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
 		if err != nil {
@@ -252,7 +253,7 @@ func (mgr *DeploymentManager) Get(n interface{}) error {
 
 		startTime := metav1.Now()
 		dep, err := mgr.clientsets[cid].AppsV1().Deployments(ns).
-			Get(s.Name, metav1.GetOptions{})
+			Get(context.Background(), s.Name, metav1.GetOptions{})
 		latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
 		if err != nil {
@@ -289,7 +290,7 @@ func (mgr *DeploymentManager) Update(n interface{}) error {
 
 		deps := make([]appsv1.Deployment, 0)
 
-		depList, err := mgr.clientsets[cid].AppsV1().Deployments(ns).List(options)
+		depList, err := mgr.clientsets[cid].AppsV1().Deployments(ns).List(context.Background(), options)
 		if err != nil {
 			return err
 		}
@@ -300,7 +301,7 @@ func (mgr *DeploymentManager) Update(n interface{}) error {
 			currDep.Spec.ProgressDeadlineSeconds = &newPdls
 
 			startTime := metav1.Now()
-			dep, err := mgr.clientsets[cid].AppsV1().Deployments(ns).Update(&currDep)
+			dep, err := mgr.clientsets[cid].AppsV1().Deployments(ns).Update(context.Background(), &currDep, metav1.UpdateOptions{})
 			latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
 			if err != nil {
@@ -337,7 +338,7 @@ func (mgr *DeploymentManager) Scale(n interface{}) error {
 
 		deps := make([]appsv1.Deployment, 0)
 
-		depList, err := mgr.clientsets[cid].AppsV1().Deployments(ns).List(options)
+		depList, err := mgr.clientsets[cid].AppsV1().Deployments(ns).List(context.Background(), options)
 		if err != nil {
 			return err
 		}
@@ -345,7 +346,7 @@ func (mgr *DeploymentManager) Scale(n interface{}) error {
 
 		for _, currDep := range deps {
 			scale, ge := mgr.clientsets[cid].AppsV1().Deployments(ns).GetScale(
-				currDep.Name, metav1.GetOptions{})
+				context.Background(), currDep.Name, metav1.GetOptions{})
 			if ge != nil {
 				return ge
 			}
@@ -354,7 +355,7 @@ func (mgr *DeploymentManager) Scale(n interface{}) error {
 
 			startTime := metav1.Now()
 			_, err := mgr.clientsets[cid].AppsV1().Deployments(ns).UpdateScale(
-				currDep.Name, scale)
+				context.Background(), currDep.Name, scale, metav1.UpdateOptions{})
 			latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
 			if err != nil {
@@ -391,7 +392,7 @@ func (mgr *DeploymentManager) Delete(n interface{}) error {
 			"metadata.namespace": ns,
 		}.AsSelector().String()
 		podOptions := metav1.ListOptions{FieldSelector: selector}
-		pods, err := mgr.clientsets[cid].CoreV1().Pods(ns).List(podOptions)
+		pods, err := mgr.clientsets[cid].CoreV1().Pods(ns).List(context.Background(), podOptions)
 
 		if err != nil {
 			return err
@@ -412,7 +413,7 @@ func (mgr *DeploymentManager) Delete(n interface{}) error {
 		deps := make([]appsv1.Deployment, 0)
 
 		options := GetListOptions(s)
-		depList, err := mgr.clientsets[cid].AppsV1().Deployments(ns).List(options)
+		depList, err := mgr.clientsets[cid].AppsV1().Deployments(ns).List(context.Background(), options)
 		if err != nil {
 			return err
 		}
@@ -422,7 +423,7 @@ func (mgr *DeploymentManager) Delete(n interface{}) error {
 			// Delete the deployment
 			log.Infof("Deleting deployment %v", currDep.Name)
 			startTime := metav1.Now()
-			mgr.clientsets[cid].AppsV1().Deployments(ns).Delete(currDep.Name, nil)
+			mgr.clientsets[cid].AppsV1().Deployments(ns).Delete(context.Background(), currDep.Name, metav1.DeleteOptions{})
 
 			latency := metav1.Now().Time.Sub(startTime.Time).Round(time.Microsecond)
 
@@ -464,13 +465,13 @@ func (mgr *DeploymentManager) DeleteAll() error {
 	}
 
 	if mgr.namespace != apiv1.NamespaceDefault {
-		mgr.client.CoreV1().Namespaces().Delete(mgr.namespace, nil)
+		mgr.client.CoreV1().Namespaces().Delete(context.Background(), mgr.namespace, metav1.DeleteOptions{})
 	}
 
 	// Delete other non default namespaces
 	for ns, _ := range mgr.nsSet {
 		if ns != apiv1.NamespaceDefault {
-			mgr.client.CoreV1().Namespaces().Delete(ns, nil)
+			mgr.client.CoreV1().Namespaces().Delete(context.Background(), ns, metav1.DeleteOptions{})
 		}
 	}
 	mgr.nsSet = make(map[string]bool, 0)
