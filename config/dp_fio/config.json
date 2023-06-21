@@ -21,11 +21,17 @@
                               	}
                        }
                 ],
-                "SleepTimes": [100000],
+                "SleepTimes": [200000],
                 "Count": 1
 	}
   },
   {
+        "Predicate": 
+        {
+                                "Resource": "kbench-pod-namespace/pod/kbench-pod-oid-0-tid-0/fiocontainer",
+                                "Command": "which fio",
+                                "Expect": "contains:fio"
+        },
 	"Pods":
 	{
        	"Actions": [
