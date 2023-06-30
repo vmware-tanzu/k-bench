@@ -27,5 +27,7 @@ spec:
     args: 
       - apt-get update;
         apt-get install -y fio ioping;
+        apt-get install -y fio ioping;
+        apt-get install -y fio ioping;
         sleep infinity;
     name: fiocontainer
