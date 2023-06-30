@@ -62,7 +62,7 @@ const (
 
 const routinesPerClient int = 4
 const defaultInterval int = 3000
-const defaultTimeout int = 180000
+const defaultTimeout int = 1000000
 const successRateThreshold int = 90
 
 var wg sync.WaitGroup
