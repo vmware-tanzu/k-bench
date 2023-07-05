@@ -74,7 +74,7 @@ var outDir *string
 var mgrs map[string]manager.Manager
 
 func Run(kubeConfig *restclient.Config,
-	testConfig TestConfig, outputDir *string) error {
+	testConfig TestConfig, outputDir *string, kubeConfigfile string) error {
 
 	outDir = outputDir
 	wcpOps := testConfig.Operations
@@ -221,7 +221,7 @@ func Run(kubeConfig *restclient.Config,
 			opIdx += startIdx
 
 			// Check and run if valid pod config is found
-			lastPodAction := checkAndRunPod(kubeConfig, op, opIdx, maxClients)
+			lastPodAction := checkAndRunPod(kubeConfig, op, opIdx, maxClients, kubeConfigfile)
 
 			// Check and run if valid deployment config is found
 			lastDepAction := checkAndRunDeployment(kubeConfig, op, opIdx, maxClients)

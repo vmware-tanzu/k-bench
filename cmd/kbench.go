@@ -21,10 +21,10 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"k-bench/pkg/prometheus"
+	//"k-bench/pkg/prometheus"
 	"k-bench/util"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
+	//"k8s.io/client-go/dynamic"
+	//"k8s.io/client-go/kubernetes"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -150,10 +150,10 @@ func main() {
 	}
 
 	if configWithPrometheus != nil {
-		client, _ := kubernetes.NewForConfig(config)
-		dynClient, _ := dynamic.NewForConfig(config)
-		pc := prometheus.NewPrometheusController(client, &dynClient, config, configWithPrometheus)
-		pc.EnablePrometheus()
+	//	client, _ := kubernetes.NewForConfig(config)
+	//	dynClient, _ := dynamic.NewForConfig(config)
+	//	pc := prometheus.NewPrometheusController(client, &dynClient, config, configWithPrometheus)
+	//	pc.EnablePrometheus()
 	}
 
 	// Sort the config files by the lightness of workload, from light to heavy.
@@ -192,7 +192,7 @@ func main() {
 	//Run each workload(specified by its config file) one after another in the sorted order
 	for _, testConfig := range testConfigs {
 		fmt.Printf("Running workload, please check kbench log for details... \n")
-		util.Run(config, testConfig, outDir)
+		util.Run(config, testConfig, outDir, *kubeconfig)
 		time.Sleep(time.Duration(testConfig.SleepTimeAfterRun) * time.Millisecond)
 	}
 

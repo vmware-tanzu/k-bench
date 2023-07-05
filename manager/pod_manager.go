@@ -544,7 +544,7 @@ func (mgr *PodManager) Run(n interface{}) error {
 					return err
 				}
 
-				exec.Stream(remotecommand.StreamOptions{
+				exec.StreamWithContext(context.Background(), remotecommand.StreamOptions{
 					Stdin:  nil,
 					Stdout: &mystdout,
 					Stderr: &mystderr,
@@ -606,7 +606,7 @@ func (mgr *PodManager) Copy(n interface{}) error {
 				toPath += mgr.startTimestamp + "/" + pod.Name
 				fromPath = pod.Namespace + "/" + pod.Name + ":" + s.ContainerPath
 			}
-			args := []string{"cp", fromPath, toPath}
+			args := []string{"cp", fromPath, toPath,"--kubeconfig",s.KubeConfigfile}
 			copyr, copye := osexec.Command("kubectl", args...).CombinedOutput()
 			if copye != nil {
 				log.Errorf("Error copying file(s) for pod: %v", pod.Name)
