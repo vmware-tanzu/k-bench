@@ -132,6 +132,7 @@ type ActionSpec struct {
 type RunSpec struct {
 	RunCommand   string
 	ActionFilter ActionSpec
+	KubeConfigfile string
 }
 
 type CopySpec struct {
@@ -139,6 +140,7 @@ type CopySpec struct {
 	LocalPath     string
 	ContainerPath string
 	Upload        bool
+	KubeConfigfile string
 	ActionFilter  ActionSpec
 }
 

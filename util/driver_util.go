@@ -40,7 +40,8 @@ func checkAndRunPod(
 	kubeConfig *restclient.Config,
 	op WcpOp,
 	opIdx int,
-	maxClients map[string]int) string {
+	maxClients map[string]int,
+	kubeConfigfile string) string {
 	if len(op.Pod.Actions) > 0 {
 
 		var podMgr *manager.PodManager
@@ -57,7 +58,7 @@ func checkAndRunPod(
 		log.Infof("Performing pod actions in operation %v", opIdx)
 
 		for i := 0; i < op.Pod.Count; i++ {
-			go runPodActions(podMgr, op.Pod, opIdx, i)
+			go runPodActions(podMgr, op.Pod, opIdx, i, kubeConfigfile)
 			wg.Add(1)
 		}
 
@@ -313,7 +314,8 @@ func runPodActions(
 	mgr *manager.PodManager,
 	podConfig PodConfig,
 	opNum int,
-	tid int) {
+	tid int,
+	kubeConfigfile string) {
 
 	// Get default pod name (used when filtering not specified or applicable)
 	podName := mgr.GetResourceName(podConfig.PodNamePrefix, opNum, tid)
@@ -409,7 +411,7 @@ func runPodActions(
 				podName, tid, opNum, ns, lk, lv,
 				runSpec.MatchGoroutine, runSpec.MatchOperation, manager.POD}
 			ae := mgr.ActionFuncs[manager.RUN_ACTION](mgr,
-				manager.RunSpec{runSpec.Command, as})
+				manager.RunSpec{runSpec.Command, as, kubeConfigfile})
 			if ae != nil {
 				log.Error(ae)
 			}
@@ -425,7 +427,7 @@ func runPodActions(
 					*outDir,
 					copySpec.LocalPath,
 					copySpec.ContainerPath,
-					copySpec.Upload, as})
+					copySpec.Upload, kubeConfigfile, as})
 			if ae != nil {
 				log.Error(ae)
 			}
