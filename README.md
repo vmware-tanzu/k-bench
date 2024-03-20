@@ -338,10 +338,7 @@ For examples on how to use predicates, you may check config file samples under .
 
 Please contact the project members and read CONTRIBUTING.md if you are interested in making contributions.
 
-## Project Leads
+## Past Contributors
 Karthik Ganesan
-Email: ganesank@vmware.com for questions and comments
-
-## Contributors
 Yong Li 
 Helen Liu
